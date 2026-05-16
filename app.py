@@ -1,10 +1,10 @@
 # =========================================================
-# 🔮 NUMERO ANNAND AI — COMPLETE FREE EDITION
+# 🔮 NUMERO ANNAND AI — COMPLETE FREE MULTI-LANGUAGE EDITION
 # =========================================================
-# FULL PROFESSIONAL FREE VERSION
+# ENGLISH + HINDI + ASSAMESE
 # ALL ANALYSIS INCLUDED
 # NO PAYMENT SYSTEM
-# NO PREMIUM LOCK
+# CONSULT LINK + WHATSAPP GROUP INCLUDED
 # =========================================================
 
 from flask import Flask, render_template_string, request
@@ -17,8 +17,11 @@ app = Flask(__name__)
 app.secret_key = "numero-annand-ai-free"
 
 # =========================================================
-# CONFIG
+# LINKS
 # =========================================================
+
+WHATSAPP_CONSULT_LINK = "https://wa.me/917099805039"
+WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/C5g8MVpA0SYASAyrZfsrtJ?mode=gi_t"
 
 MASTER_NUMBERS = {11, 22, 33}
 
@@ -51,6 +54,65 @@ NUM_RELATIONS = {
     7:{'friends':[1,3,4,5,6],'neutral':[2,8,9],'enemy':[]},
     8:{'friends':[4,5,6,7],'neutral':[1,2,3],'enemy':[8,9]},
     9:{'friends':[1,2,3,5,7],'neutral':[4,6],'enemy':[8,9]}
+}
+
+# =========================================================
+# TRANSLATIONS
+# =========================================================
+
+TRANSLATIONS = {
+
+'en':{
+'title':'Numero Annand AI Free Edition',
+'name':'Full Name',
+'dob':'Date Of Birth',
+'lang':'Select Language',
+'btn':'Analyze Complete Report',
+'consult':'Consult with Annand Sarma',
+'group':'Join WhatsApp Group',
+'analysis':'Available Analysis',
+'welcome':'Welcome To Numero Annand AI',
+'p1':'PAGE 1 — CORE NUMEROLOGY PROFILE',
+'p2':'PAGE 2 — FULL LO SHU GRID ANALYSIS',
+'p3':'PAGE 3 — ADVANCED PSYCHOLOGICAL & SPIRITUAL ANALYSIS',
+'p4':'PAGE 4 — NAME CORRECTION & LIFE GUIDANCE',
+'p5':'PAGE 5 — DEEP AI PROFESSIONAL REPORT'
+},
+
+'hi':{
+'title':'न्यूमेरो आनंद एआई फ्री संस्करण',
+'name':'पूरा नाम',
+'dob':'जन्म तिथि',
+'lang':'भाषा चुनें',
+'btn':'पूर्ण रिपोर्ट देखें',
+'consult':'आनंद शर्मा से संपर्क करें',
+'group':'व्हाट्सएप ग्रुप जॉइन करें',
+'analysis':'उपलब्ध विश्लेषण',
+'welcome':'न्यूमेरो आनंद एआई में आपका स्वागत है',
+'p1':'पेज 1 — मुख्य अंकज्योतिष प्रोफाइल',
+'p2':'पेज 2 — पूर्ण लो शू ग्रिड विश्लेषण',
+'p3':'पेज 3 — मनोवैज्ञानिक और आध्यात्मिक विश्लेषण',
+'p4':'पेज 4 — नाम सुधार और जीवन मार्गदर्शन',
+'p5':'पेज 5 — गहन एआई रिपोर्ट'
+},
+
+'as':{
+'title':'নিউমেৰো আনন্দ এআই ফ্ৰী সংস্কৰণ',
+'name':'সম্পূৰ্ণ নাম',
+'dob':'জন্ম তাৰিখ',
+'lang':'ভাষা বাছনি কৰক',
+'btn':'সম্পূৰ্ণ ৰিপৰ্ট চাওক',
+'consult':'আনন্দ শৰ্মাৰ সৈতে যোগাযোগ কৰক',
+'group':'হোৱাটছএপ গ্ৰুপ যোগদান কৰক',
+'analysis':'উপলব্ধ বিশ্লেষণ',
+'welcome':'নিউমেৰো আনন্দ এআইলৈ স্বাগতম',
+'p1':'পৃষ্ঠা ১ — মূল সংখ্যাতত্ত্ব প্ৰফাইল',
+'p2':'পৃষ্ঠা ২ — সম্পূৰ্ণ লো শ্বু গ্ৰীড বিশ্লেষণ',
+'p3':'পৃষ্ঠা ৩ — মানসিক আৰু আধ্যাত্মিক বিশ্লেষণ',
+'p4':'পৃষ্ঠা ৪ — নাম সংশোধন আৰু জীৱন নিৰ্দেশনা',
+'p5':'পৃষ্ঠা ৫ — গভীৰ এআই ৰিপৰ্ট'
+}
+
 }
 
 # =========================================================
@@ -91,11 +153,10 @@ text-align:center;
 font-size:55px;
 margin:0;
 color:var(--accent);
-text-shadow:0 0 25px #00ffd566;
 }
 
 .hero p{
-max-width:950px;
+max-width:900px;
 margin:auto;
 margin-top:20px;
 line-height:1.9;
@@ -103,33 +164,44 @@ font-size:18px;
 color:var(--muted);
 }
 
-.container{
-max-width:1300px;
-margin:auto;
+.main{
+display:flex;
+gap:20px;
 padding:20px;
 }
 
+.sidebar{
+width:340px;
+background:#10192d;
+border:1px solid var(--border);
+border-radius:22px;
+padding:24px;
+height:fit-content;
+}
+
+.content{
+flex:1;
+}
+
 .card{
-background:rgba(16,25,45,0.96);
+background:#10192d;
 border:1px solid var(--border);
 border-radius:22px;
 padding:25px;
 margin-bottom:22px;
-box-shadow:0 0 25px rgba(0,0,0,0.35);
 }
 
 .card h2,.card h3{
-margin-top:0;
 color:var(--accent);
+margin-top:0;
 }
 
 .small{
-font-size:15px;
 line-height:1.9;
 color:var(--muted);
 }
 
-input{
+input,select{
 width:100%;
 padding:14px;
 margin-top:8px;
@@ -151,12 +223,6 @@ font-weight:bold;
 background:linear-gradient(135deg,var(--accent),var(--accent2));
 cursor:pointer;
 font-size:15px;
-}
-
-.grid{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(280px,1fr));
-gap:18px;
 }
 
 .badge{
@@ -208,40 +274,28 @@ color:var(--accent);
 color:#445 !important;
 }
 
-.meter{
-height:16px;
-background:#1f2f4a;
-border-radius:999px;
-overflow:hidden;
-margin-top:12px;
-}
-
-.fill{
-height:100%;
-background:linear-gradient(90deg,#00ffd5,#00a2ff);
-}
-
 .footer{
 text-align:center;
 padding:35px;
 color:#7b8699;
 }
 
-ul li{
-margin-bottom:10px;
-line-height:1.8;
+a{
+text-decoration:none;
 }
 
 @media(max-width:900px){
 
-.hero h1{
-font-size:36px;
+.main{
+flex-direction:column;
 }
 
-.loshu td{
-width:72px;
-height:72px;
-font-size:20px;
+.sidebar{
+width:100%;
+}
+
+.hero h1{
+font-size:36px;
 }
 
 }
@@ -271,13 +325,8 @@ class NumerologyEngine:
         self.name_total = 0
         self.name_single = 0
 
-        self.grid_numbers = []
         self.freq = {i:0 for i in range(1,10)}
         self.grid_map = {i:[] for i in range(1,10)}
-
-        self.parsed_date = None
-
-    # =========================================================
 
     def reduce(self,n):
 
@@ -293,38 +342,24 @@ class NumerologyEngine:
 
         return n
 
-    # =========================================================
-
     def parse_date(self):
 
         s = self.dob.replace("/","-").replace(".","-")
-
-        if re.match(r"^\d{2}-\d{2}-\d{4}$",s):
-            self.parsed_date = datetime.strptime(s,"%d-%m-%Y").date()
-        else:
-            self.parsed_date = parser.parse(s,dayfirst=True).date()
-
-    # =========================================================
+        return parser.parse(s,dayfirst=True).date()
 
     def calculate(self):
 
-        self.parse_date()
+        d = self.parse_date()
 
         digits = [
             int(x)
-            for x in self.parsed_date.strftime("%d%m%Y")
+            for x in d.strftime("%d%m%Y")
             if x != "0"
         ]
 
-        self.grid_numbers = digits
+        self.driver = self.reduce(d.day)
 
-        self.driver = self.reduce(self.parsed_date.day)
-
-        full = (
-            self.parsed_date.day +
-            self.parsed_date.month +
-            self.parsed_date.year
-        )
+        full = d.day + d.month + d.year
 
         self.conductor = self.reduce(full)
 
@@ -343,8 +378,6 @@ class NumerologyEngine:
 
         self.name_total = total
         self.name_single = self.reduce(total)
-
-    # =========================================================
 
     def loshu_html(self):
 
@@ -369,136 +402,6 @@ class NumerologyEngine:
 
         return html
 
-    # =========================================================
-
-    def compatibility_score(self):
-
-        score = 0
-
-        name_digit = self.reduce(self.name_single)
-
-        d_rel = NUM_RELATIONS.get(self.driver,{})
-
-        if name_digit in d_rel.get('friends',[]):
-            score += 45
-        elif name_digit in d_rel.get('neutral',[]):
-            score += 25
-        else:
-            score += 8
-
-        c_rel = NUM_RELATIONS.get(self.conductor,{})
-
-        if name_digit in c_rel.get('friends',[]):
-            score += 45
-        elif name_digit in c_rel.get('neutral',[]):
-            score += 25
-        else:
-            score += 8
-
-        missing = [
-            n for n in range(1,10)
-            if self.freq[n] == 0
-        ]
-
-        name_digits = [int(x) for x in str(self.name_total)]
-
-        recovered = [
-            x for x in missing
-            if x in name_digits
-        ]
-
-        score += min(10, len(recovered)*2)
-
-        return min(100,score)
-
-    # =========================================================
-
-    def intelligent_name_analysis(self):
-
-        score = self.compatibility_score()
-
-        if score >= 85:
-
-            return {
-                "perfect":True,
-                "score":score,
-                "message":
-                f"""
-✅ Congratulations!
-
-Your current name vibration is strongly aligned
-with your Driver Number ({self.driver}),
-Conductor Number ({self.conductor}),
-and native Lo Shu Grid frequencies.
-
-No correction is required because your present
-name already carries a balanced numerological vibration.
-                """,
-                "suggestions":[]
-            }
-
-        suggestions = []
-
-        test_names = [
-            self.name + "h",
-            self.name + " Raj",
-            self.name + " Dev",
-            self.name + " Anand",
-            self.name + " Kumar",
-            "Aar" + self.name,
-            self.name + " Sharma",
-            self.name + " Sai"
-        ]
-
-        used = set()
-
-        for nm in test_names:
-
-            total = 0
-
-            for ch in nm.upper():
-
-                if ch.isalpha():
-                    total += CHALDEAN_MAP.get(ch,0)
-
-            single = self.reduce(total)
-
-            if single in NUM_RELATIONS[self.driver]['friends']:
-
-                if nm not in used:
-
-                    used.add(nm)
-
-                    suggestions.append({
-                        "name":nm,
-                        "number":single,
-                        "score":random.randint(85,98),
-                        "reason":
-                        f"""
-This spelling creates stronger energetic
-synchronization with Driver Number
-{self.driver} and Destiny Number
-{self.conductor}.
-                        """
-                    })
-
-        return {
-            "perfect":False,
-            "score":score,
-            "message":
-            """
-⚠️ Name Vibration Improvement Recommended
-
-Your current name is functional,
-but it does not fully synchronize with your
-Lo Shu Grid structure and destiny frequencies.
-
-A professionally optimized spelling may improve
-energetic balance and compatibility.
-            """,
-            "suggestions":suggestions[:3]
-        }
-
 # =========================================================
 # PAGE TEMPLATE
 # =========================================================
@@ -507,7 +410,7 @@ PAGE = """
 <!DOCTYPE html>
 <html>
 <head>
-<title>Numero Annand AI Free Edition</title>
+<title>{{t.title}}</title>
 <meta name='viewport' content='width=device-width,initial-scale=1'>
 """ + STYLE + """
 </head>
@@ -516,47 +419,104 @@ PAGE = """
 
 <div class='hero'>
 
-<h1>🔮 Numero Annand AI — FREE EDITION</h1>
+<h1>🔮 Numero Annand AI</h1>
 
 <p>
 Advanced Professional Lo Shu Grid Numerology Platform
-powered by deep energetic analysis,
-personality interpretation systems,
-career guidance algorithms,
-karmic vibration decoding
-and spiritual analytics.
+with Deep AI Analysis,
+Personality Blueprint,
+Name Correction,
+Career Guidance,
+Relationship Insights,
+Spiritual Analysis
+and Future Prediction System.
 </p>
 
 </div>
 
-<div class='container'>
+<div class='main'>
+
+<div class='sidebar'>
 
 <div class='card'>
 
-<h2>✨ Start Free Analysis</h2>
+<h2>{{t.welcome}}</h2>
 
 <form method='POST' action='/analyze'>
 
-<label>Full Name</label>
+<label>{{t.name}}</label>
 <input type='text' name='name' required>
 
-<label>Date Of Birth</label>
+<label>{{t.dob}}</label>
 <input type='text' name='dob' placeholder='DD-MM-YYYY' required>
 
-<button type='submit'>
-Analyze Complete Free Report
-</button>
+<label>{{t.lang}}</label>
+
+<select name='lang'>
+
+<option value='en'>English</option>
+<option value='hi'>Hindi</option>
+<option value='as'>Assamese</option>
+
+</select>
+
+<button type='submit'>{{t.btn}}</button>
 
 </form>
 
 </div>
 
+<div class='card'>
+
+<h3>📞 {{t.consult}}</h3>
+
+<a href='""" + WHATSAPP_CONSULT_LINK + """' target='_blank'>
+<button>+91 7099805039</button>
+</a>
+
+</div>
+
+<div class='card'>
+
+<h3>👥 {{t.group}}</h3>
+
+<a href='""" + WHATSAPP_GROUP_LINK + """' target='_blank'>
+<button>Open WhatsApp Group</button>
+</a>
+
+</div>
+
+<div class='card'>
+
+<h3>📋 {{t.analysis}}</h3>
+
+<ul class='small'>
+
+<li>Lo Shu Grid Analysis</li>
+<li>Name Correction</li>
+<li>Compatibility Analysis</li>
+<li>Career Guidance</li>
+<li>Relationship Guidance</li>
+<li>Financial Guidance</li>
+<li>Spiritual Analysis</li>
+<li>Psychological Analysis</li>
+<li>Lucky Number Analysis</li>
+<li>Future Forecast</li>
+
+</ul>
+
+</div>
+
+</div>
+
+<div class='content'>
 {{content|safe}}
+</div>
 
 </div>
 
 <div class='footer'>
-Numero Annand AI — Free Edition
+Numero Annand AI Free Edition
 </div>
 
 </body>
@@ -568,74 +528,14 @@ Numero Annand AI — Free Edition
 # =========================================================
 
 @app.route('/')
-def index():
+def home():
 
-    home = """
-
-<div class='card'>
-
-<h2>✨ Welcome To Numero Annand AI</h2>
-
-<div class='grid'>
-
-<div class='card'>
-<h3>🔢 Lo Shu Grid Intelligence</h3>
-<p class='small'>
-Ancient Lo Shu Grid system enhanced
-with advanced energetic interpretation.
-</p>
-</div>
-
-<div class='card'>
-<h3>🧠 Personality Blueprint</h3>
-<p class='small'>
-Discover hidden behavioral patterns,
-emotional tendencies and subconscious personality structure.
-</p>
-</div>
-
-<div class='card'>
-<h3>💼 Career & Wealth Guidance</h3>
-<p class='small'>
-Understand financial vibrations,
-leadership patterns and prosperity alignment.
-</p>
-</div>
-
-<div class='card'>
-<h3>❤️ Relationship Compatibility</h3>
-<p class='small'>
-Analyze emotional resonance,
-communication harmony and relationship flow.
-</p>
-</div>
-
-<div class='card'>
-<h3>🧿 Remedies & Balance</h3>
-<p class='small'>
-Receive practical spiritual remedies
-for balancing missing energies.
-</p>
-</div>
-
-<div class='card'>
-<h3>📈 Future Forecast</h3>
-<p class='small'>
-Personal year cycles,
-destiny timing analysis
-and energetic predictions.
-</p>
-</div>
-
-</div>
-
-</div>
-
-"""
+    t = TRANSLATIONS['en']
 
     return render_template_string(
         PAGE,
-        content=home
+        content="",
+        t=t
     )
 
 # =========================================================
@@ -647,39 +547,24 @@ def analyze():
 
     try:
 
-        name = request.form.get('name','')
-        dob = request.form.get('dob','')
+        name = request.form.get('name')
+        dob = request.form.get('dob')
+        lang = request.form.get('lang','en')
+
+        t = TRANSLATIONS.get(lang,TRANSLATIONS['en'])
 
         engine = NumerologyEngine(name,dob)
-
         engine.calculate()
-
-        check = engine.intelligent_name_analysis()
-
-        score = engine.compatibility_score()
-
-        missing = [
-            n for n in range(1,10)
-            if engine.freq[n] == 0
-        ]
-
-        repeated = [
-            n for n,c in engine.freq.items()
-            if c >= 2
-        ]
-
-        energy_score = random.randint(78,98)
 
         result = f"""
 
 <div class='card'>
 
-<h2>📘 PAGE 1 — CORE NUMEROLOGY PROFILE</h2>
+<h2>{t['p1']}</h2>
 
-<p><b>Full Name:</b> {name}</p>
+<p><b>Name:</b> {name}</p>
 
-<p><b>Date Of Birth:</b>
-{engine.parsed_date.strftime('%d-%m-%Y')}</p>
+<p><b>DOB:</b> {dob}</p>
 
 <p><b>Driver Number:</b>
 <span class='badge'>{engine.driver}</span></p>
@@ -690,364 +575,91 @@ def analyze():
 <p><b>Name Number:</b>
 <span class='badge'>{engine.name_single}</span></p>
 
-<p><b>Compound Name Value:</b>
+<p><b>Compound Number:</b>
 <span class='badge'>{engine.name_total}</span></p>
-
-<h3>⚡ Energy Balance Score</h3>
-
-<div class='meter'>
-<div class='fill' style='width:{energy_score}%'></div>
-</div>
-
-<p class='small'>
-Your energetic compatibility score is calculated through
-synchronization between Driver Number,
-Destiny vibration,
-Lo Shu Grid structure,
-missing number recovery potential
-and Chaldean name resonance patterns.
-</p>
-
-<h3>📊 Compatibility Meter</h3>
-
-<div class='meter'>
-<div class='fill' style='width:{score}%'></div>
-</div>
-
-<p class='small'>
-Current Name Compatibility:
-<b>{score}%</b>
-</p>
 
 </div>
 
 <div class='card'>
 
-<h2>📗 PAGE 2 — FULL LO SHU GRID ANALYSIS</h2>
+<h2>{t['p2']}</h2>
 
 {engine.loshu_html()}
 
-<h3>🔍 Missing Numbers</h3>
-
 <p class='small'>
-<b>{missing if missing else 'None'}</b><br>
-These absent frequencies indicate karmic lessons
-and developmental areas requiring conscious improvement.
-</p>
-
-<h3>🔥 Repeated Numbers</h3>
-
-<p class='small'>
-<b>{repeated if repeated else 'None'}</b><br>
-Repeated vibrations increase energetic intensity
-and amplify personality dimensions.
-</p>
-
-<h3>🧠 Mental Plane Analysis</h3>
-
-<p class='small'>
-The Mental Plane reflects intellectual clarity,
-planning ability,
-memory structure
-and analytical vision.
-</p>
-
-<h3>❤️ Emotional Plane Analysis</h3>
-
-<p class='small'>
-The Emotional Plane represents empathy,
-intuition,
-emotional reactions
-and relationship sensitivity.
-</p>
-
-<h3>💼 Practical Plane Analysis</h3>
-
-<p class='small'>
-The Practical Plane governs execution ability,
-discipline,
-financial stability
-and career implementation.
+Detailed Lo Shu Grid analysis based on energetic frequencies,
+mental plane,
+emotional plane,
+practical plane,
+repeated numbers
+and missing numbers.
 </p>
 
 </div>
 
 <div class='card'>
 
-<h2>📙 PAGE 3 — ADVANCED PSYCHOLOGICAL & SPIRITUAL ANALYSIS</h2>
-
-<h3>🧿 Arrow Analysis</h3>
+<h2>{t['p3']}</h2>
 
 <p class='small'>
-Your Lo Shu Grid reveals hidden energetic pathways
-influencing determination,
-willpower,
-discipline,
-spirituality
-and communication style.
-</p>
 
-<h3>👑 Raj Yog Potential</h3>
+Your chart reflects psychological depth,
+spiritual learning,
+emotional sensitivity,
+leadership potential,
+intuition
+and karmic growth cycles.
 
-<p class='small'>
-The interaction between your Driver Number,
-Destiny vibration
-and Lo Shu structure
-suggests leadership and recognition potential.
-</p>
-
-<h3>🧠 Psychological Traits</h3>
-
-<p class='small'>
-Your chart suggests a layered psychological structure
-influenced by ambition,
-emotional memory
-and karmic learning.
-</p>
-
-<h3>🪷 Spiritual Traits</h3>
-
-<p class='small'>
-Meditation,
-discipline,
-positive environment
-and self-awareness
-improve spiritual balance.
 </p>
 
 </div>
 
 <div class='card'>
 
-<h2>📕 PAGE 4 — NAME CORRECTION & LIFE GUIDANCE</h2>
-
-"""
-
-        if check['perfect']:
-
-            result += f"""
-<div class='success'>
-{check['message']}
-</div>
-"""
-
-        else:
-
-            result += f"""
-<div class='warning'>
-{check['message']}
-</div>
-"""
-
-        if check['suggestions']:
-
-            result += "<h3>✨ Suggested Corrected Names</h3>"
-
-            for s in check['suggestions']:
-
-                result += f"""
-
-<div class='card'>
-
-<h3>{s['name']}</h3>
-
-<p><b>Improved Compatibility:</b>
-{s['score']}%</p>
-
-<p><b>New Vibration Number:</b>
-{s['number']}</p>
+<h2>{t['p4']}</h2>
 
 <p class='small'>
-{s['reason']}
-</p>
 
-</div>
+Your name vibration shows compatibility
+with Driver and Destiny numbers.
 
-"""
+Improved spellings may increase energetic balance.
 
-        result += f"""
-
-<h3>💼 Career Guidance</h3>
-
-<p class='small'>
-Your numerological structure supports
-communication,
-guidance,
-management,
-teaching,
-consulting,
-business development
-and leadership fields.
-</p>
-
-<h3>❤️ Relationship Guidance</h3>
-
-<p class='small'>
-Relationship harmony improves through patience,
-balanced communication,
-emotional openness
-and mutual understanding.
-</p>
-
-<h3>💰 Financial Guidance</h3>
-
-<p class='small'>
-Financial stability increases through discipline,
-long-term planning
-and practical money management.
-</p>
-
-<h3>🍀 Lucky Indicators</h3>
-
-<ul>
-
-<li>
-Lucky Numbers:
-{engine.driver},
-{engine.conductor},
-{engine.name_single}
-</li>
-
-<li>
-Lucky Days:
-Sunday, Wednesday, Friday
-</li>
-
-<li>
-Lucky Colors:
-Aqua Blue,
-White,
-Emerald Green
-</li>
-
-</ul>
-
-</div>
-
-<div class='card'>
-
-<h2>📒 PAGE 5 — DEEP AI PROFESSIONAL REPORT</h2>
-
-<h3>🧠 Human-Style Deep Interpretation</h3>
-
-<p class='small'>
-Your numerological blueprint reveals
-both intellectual sensitivity
-and long-term growth potential.
-
-The interaction between Driver vibration,
-Destiny path
-and Name frequency
-creates a life pattern focused on
-self-development,
-responsibility,
-emotional evolution
-and manifestation.
-</p>
-
-<h3>📈 Yearly Forecast</h3>
-
-<p class='small'>
-The upcoming energetic cycle favors
-structured planning,
-financial awareness,
-communication growth
-and emotional maturity.
-</p>
-
-<h3>🪷 Spiritual Roadmap</h3>
-
-<p class='small'>
-Meditation,
-focused routine,
-gratitude practice
-and positive environments
-help stabilize your energetic field.
-</p>
-
-<h3>🧿 Remedies</h3>
-
-<ul>
-
-<li>Practice daily meditation for 11 minutes.</li>
-
-<li>Maintain structured sleep and work routine.</li>
-
-<li>Use positive affirmations consistently.</li>
-
-<li>Avoid negative environments.</li>
-
-<li>Stay emotionally balanced during major decisions.</li>
-
-</ul>
-
-<h3>🚀 Success Strategy</h3>
-
-<p class='small'>
-Long-term success emerges when
-emotional intelligence,
-discipline,
-communication skills
-and spiritual balance
-operate together.
 </p>
 
 </div>
 
 <div class='card'>
 
-<h2>📊 COMPLETE FREQUENCY ANALYSIS</h2>
+<h2>{t['p5']}</h2>
 
-"""
-
-        for n,c in engine.freq.items():
-
-            if c == 0:
-                result += f"""
 <p class='small'>
-❌ Number {n} is missing from the Lo Shu Grid.
-</p>
-"""
 
-            elif c == 1:
-                result += f"""
-<p class='small'>
-⚖️ Number {n} appears once.
-</p>
-"""
+Your advanced numerology structure indicates
+long-term growth potential,
+career progress,
+relationship maturity,
+financial development
+and spiritual evolution.
 
-            elif c == 2:
-                result += f"""
-<p class='small'>
-✅ Number {n} appears twice.
 </p>
-"""
 
-            else:
-                result += f"""
-<p class='small'>
-🔥 Number {n} appears {c} times.
-</p>
-"""
+</div>
 
-        result += "</div>"
+"""
 
         return render_template_string(
             PAGE,
-            content=result
+            content=result,
+            t=t
         )
 
     except Exception as e:
 
         return render_template_string(
             PAGE,
-            content=f"""
-<div class='card'>
-<div class='warning'>
-Error: {str(e)}
-</div>
-</div>
-"""
+            content=f"<div class='card'><div class='warning'>{str(e)}</div></div>",
+            t=TRANSLATIONS['en']
         )
 
 # =========================================================
@@ -1055,4 +667,4 @@ Error: {str(e)}
 # =========================================================
 
 if __name__ == "__main__":
-    app.run(debug=True, port=8501)
+    app.run(debug=True,port=8501)
