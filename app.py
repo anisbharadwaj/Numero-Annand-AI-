@@ -1,167 +1,471 @@
-from flask import Flask, render_template, render_template_string, request, redirect, url_for, flash
-from datetime import datetime, date
+# =========================================================
+# 🔮 NUMERO ANNAND AI — FREE EDITION
+# =========================================================
+# FULL FREE VERSION — NO PAYMENT / NO PREMIUM LOCK
+# =========================================================
+
+from flask import Flask, render_template_string, request
+from datetime import datetime
 from dateutil import parser
 import re
-import math
 import random
 
 app = Flask(__name__)
-app.secret_key = "numero-annand-ai-free-secure-key"
+app.secret_key = "numero-annand-ai-free"
 
-# -------------------------------------------------------------------------
-# CORE NUMEROLOGY ENGINE (LO SHU GRID & CHALDEAN LOGIC)
-# -------------------------------------------------------------------------
+# =========================================================
+# CONFIG
+# =========================================================
 
-def calculate_single_digit(value):
-    """Reduces any number or digit string down to a single root number (1-9)."""
-    while len(str(value)) > 1:
-        value = sum(int(digit) for digit in str(value) if digit.isdigit())
-    return value
+MASTER_NUMBERS = {11, 22, 33}
 
-def get_chaldean_value(name):
-    """Calculates the Chaldean Name Number total based on standard mappings."""
-    mapping = {
-        'A': 1, 'I': 1, 'J': 1, 'Q': 1, 'Y': 1,
-        'B': 2, 'K': 2, 'R': 2,
-        'C': 3, 'G': 3, 'L': 3, 'S': 3,
-        'D': 4, 'M': 4, 'T': 4,
-        'E': 5, 'H': 5, 'N': 5, 'X': 5,
-        'U': 6, 'V': 6, 'W': 6,
-        'O': 7, 'Z': 7,
-        'F': 8, 'P': 8
-    }
-    name = name.upper()
-    total = 0
-    for char in name:
-        if char in mapping:
-            total += mapping[char]
-    return total
+# =========================================================
+# CHALDEAN MAP
+# =========================================================
 
-def analyze_numerology(name, dob_str):
-    """Generates full grid mapping, root numbers, and analytics."""
-    try:
-        parsed_date = parser.parse(dob_str)
-        day = parsed_date.day
-        month = parsed_date.month
-        year = parsed_date.year
-    except Exception:
-        return None
+CHALDEAN_MAP = {
+    'A':1,'I':1,'J':1,'Q':1,'Y':1,
+    'B':2,'K':2,'R':2,
+    'C':3,'G':3,'L':3,'S':3,
+    'D':4,'M':4,'T':4,
+    'E':5,'H':5,'N':5,'X':5,
+    'U':6,'V':6,'W':6,
+    'O':7,'Z':7,
+    'F':8,'P':8
+}
 
-    # Driver & Conductor calculations
-    driver = calculate_single_digit(day)
-    full_sum = sum(int(d) for d in f"{day:02d}{month:02d}{year}" if d.isdigit())
-    conductor = calculate_single_digit(full_sum)
+# =========================================================
+# RELATIONSHIPS
+# =========================================================
 
-    # Populating the Lo Shu Grid matrix string representation
-    full_dob_digits = f"{day}{month}{year}"
-    grid_counts = {str(i): full_dob_digits.count(str(i)) for i in range(1, 10)}
-    
-    # Calculate Chaldean metrics
-    name_total = get_chaldean_value(name)
-    name_root = calculate_single_digit(name_total)
+NUM_RELATIONS = {
+    1:{'friends':[1,2,3,5,7,9],'neutral':[4,8],'enemy':[6]},
+    2:{'friends':[1,2,3,5],'neutral':[4,7,8,9],'enemy':[6]},
+    3:{'friends':[1,2,3,5,7,9],'neutral':[6,8],'enemy':[4]},
+    4:{'friends':[1,5,6,7],'neutral':[2,8,9],'enemy':[3]},
+    5:{'friends':[1,2,3,5,6,8],'neutral':[4,7,9],'enemy':[]},
+    6:{'friends':[5,6,7,8],'neutral':[3,4,9],'enemy':[1,2]},
+    7:{'friends':[1,3,4,5,6],'neutral':[2,8,9],'enemy':[]},
+    8:{'friends':[4,5,6,7],'neutral':[1,2,3],'enemy':[8,9]},
+    9:{'friends':[1,2,3,5,7],'neutral':[4,6],'enemy':[8,9]}
+}
 
-    # Simple sample text responses for insights
-    insights = [
-        f"Your Driver Number ({driver}) brings strong foundational characteristics to your personality alignment.",
-        f"Conductor Number ({conductor}) indicates that your core destiny timeline emphasizes natural growth pathways.",
-        f"The Chaldean configuration for '{name}' sums up to {name_total} (Root: {name_root}), balancing your expressions."
+# =========================================================
+# STYLE
+# =========================================================
+
+STYLE = """
+<style>
+
+body{
+margin:0;
+padding:0;
+font-family:Segoe UI;
+background:#07111f;
+color:white;
+}
+
+.hero{
+padding:50px 20px;
+text-align:center;
+background:linear-gradient(135deg,#07111f,#0f1f35);
+}
+
+.hero h1{
+font-size:48px;
+color:#00ffd5;
+margin:0;
+}
+
+.hero p{
+max-width:900px;
+margin:auto;
+margin-top:15px;
+line-height:1.8;
+color:#c5d0dd;
+}
+
+.container{
+max-width:1200px;
+margin:auto;
+padding:20px;
+}
+
+.card{
+background:#10192d;
+border:1px solid #243b60;
+border-radius:20px;
+padding:25px;
+margin-bottom:25px;
+}
+
+.card h2,.card h3{
+color:#00ffd5;
+margin-top:0;
+}
+
+input{
+width:100%;
+padding:14px;
+margin-top:8px;
+margin-bottom:18px;
+background:#08101f;
+border:1px solid #314d79;
+border-radius:12px;
+color:white;
+box-sizing:border-box;
+}
+
+button{
+width:100%;
+padding:14px;
+border:none;
+border-radius:12px;
+background:linear-gradient(135deg,#00ffd5,#00a2ff);
+font-weight:bold;
+cursor:pointer;
+font-size:16px;
+}
+
+.small{
+line-height:1.8;
+color:#c7d3df;
+}
+
+.badge{
+display:inline-block;
+padding:7px 14px;
+border-radius:999px;
+background:#00ffd5;
+color:black;
+font-weight:bold;
+margin:5px;
+}
+
+.loshu{
+margin:auto;
+border-collapse:separate;
+border-spacing:12px;
+}
+
+.loshu td{
+width:90px;
+height:90px;
+background:#08101f;
+border:2px solid #31486f;
+border-radius:18px;
+text-align:center;
+font-size:28px;
+font-weight:bold;
+color:#00ffd5;
+}
+
+.empty{
+color:#445 !important;
+}
+
+.footer{
+text-align:center;
+padding:30px;
+color:#7b8699;
+}
+
+</style>
+"""
+
+# =========================================================
+# ENGINE
+# =========================================================
+
+class NumerologyEngine:
+
+    LOSHU_LAYOUT = [
+        [4,9,2],
+        [3,5,7],
+        [8,1,6]
     ]
 
-    return {
-        "driver": driver,
-        "conductor": conductor,
-        "grid_counts": grid_counts,
-        "name_total": name_total,
-        "name_root": name_root,
-        "insights": insights
-    }
+    def __init__(self,name,dob):
+        self.name = name
+        self.dob = dob
 
-# -------------------------------------------------------------------------
-# ROUTING & REVENUE-FREE TEMPLATES
-# -------------------------------------------------------------------------
+        self.driver = 0
+        self.conductor = 0
+        self.name_total = 0
+        self.name_single = 0
 
-HTML_LAYOUT = """
+        self.freq = {i:0 for i in range(1,10)}
+        self.grid_map = {i:[] for i in range(1,10)}
+
+    def reduce(self,n):
+        while n > 9 and n not in MASTER_NUMBERS:
+            n = sum(int(x) for x in str(n))
+        return n
+
+    def parse_date(self):
+        s = self.dob.replace("/","-").replace(".","-")
+        return parser.parse(s,dayfirst=True).date()
+
+    def calculate(self):
+
+        d = self.parse_date()
+
+        digits = [int(x) for x in d.strftime("%d%m%Y") if x != "0"]
+
+        self.driver = self.reduce(d.day)
+
+        full = d.day + d.month + d.year
+        self.conductor = self.reduce(full)
+
+        for n in digits + [self.driver,self.conductor]:
+            if 1 <= n <= 9:
+                self.freq[n] += 1
+                self.grid_map[n].append(str(n))
+
+        total = 0
+
+        for ch in self.name.upper():
+            if ch.isalpha():
+                total += CHALDEAN_MAP.get(ch,0)
+
+        self.name_total = total
+        self.name_single = self.reduce(total)
+
+    def loshu_html(self):
+
+        html = "<table class='loshu'>"
+
+        for row in self.LOSHU_LAYOUT:
+
+            html += "<tr>"
+
+            for n in row:
+
+                vals = self.grid_map[n]
+
+                if vals:
+                    html += f"<td>{''.join(vals)}</td>"
+                else:
+                    html += "<td class='empty'>-</td>"
+
+            html += "</tr>"
+
+        html += "</table>"
+
+        return html
+
+# =========================================================
+# PAGE
+# =========================================================
+
+PAGE = """
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Numero Annand AI</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #0f172a; color: #f8fafc; margin: 0; padding: 20px; display: flex; justify-content: center; }
-        .container { max-width: 600px; width: 100%; background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 10px 15px -3px rgba(0,0,0,0.3); }
-        h1 { color: #38bdf8; text-align: center; margin-bottom: 5px; }
-        p.subtitle { text-align: center; color: #94a3b8; margin-top: 0; font-size: 0.95em; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; color: #cbd5e1; font-weight: 600; }
-        input[type="text"], input[type="date"] { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #475569; background: #0f172a; color: #fff; box-sizing: border-box; }
-        button { width: 100%; padding: 14px; background: #0ea5e9; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; font-size: 1em; transition: background 0.2s; }
-        button:hover { background: #0284c7; }
-        .result-box { background: #0f172a; padding: 20px; border-radius: 8px; margin-top: 25px; border-left: 4px solid #38bdf8; }
-        .grid-container { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin: 20px 0; max-width: 300px; margin-left: auto; margin-right: auto; }
-        .grid-cell { background: #334155; aspect-ratio: 1; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 6px; font-size: 1.2em; font-weight: bold; }
-        .grid-cell span { font-size: 0.6em; color: #94a3b8; }
-    </style>
+<title>Numero Annand AI Free</title>
+<meta name='viewport' content='width=device-width,initial-scale=1'>
+""" + STYLE + """
 </head>
+
 <body>
-    <div class="container">
-        <h1>Numero Annand AI</h1>
-        <p class="subtitle">Instant & Free Scientific Numerology Evaluation</p>
-        
-        <form method="POST">
-            <div class="form-group">
-                <label>Full Name</label>
-                <input type="text" name="name" placeholder="Enter your name" required value="{{ request.form.get('name', '') }}">
-            </div>
-            <div class="form-group">
-                <label>Date of Birth</label>
-                <input type="date" name="dob" required value="{{ request.form.get('dob', '') }}">
-            </div>
-            <button type="submit">Analyze Blueprint Now</button>
-        </form>
 
-        {% if result %}
-        <div class="result-box">
-            <h3>Analysis for {{ name }}</h3>
-            <p><strong>Driver Number:</strong> {{ result.driver }}</p>
-            <p><strong>Conductor Number:</strong> {{ result.conductor }}</p>
-            <p><strong>Chaldean Name Number:</strong> {{ result.name_total }} (Root: {{ result.name_root }})</p>
-            
-            <h4 style="text-align: center; color: #38bdf8; margin-top: 20px;">Lo Shu Grid Layout</h4>
-            <div class="grid-container">
-                <div class="grid-cell">{{ '4 ' * result.grid_counts['4'] if result.grid_counts['4'] > 0 else '-' }}<span>4</span></div>
-                <div class="grid-cell">{{ '9 ' * result.grid_counts['9'] if result.grid_counts['9'] > 0 else '-' }}<span>9</span></div>
-                <div class="grid-cell">{{ '2 ' * result.grid_counts['2'] if result.grid_counts['2'] > 0 else '-' }}<span>2</span></div>
-                <div class="grid-cell">{{ '3 ' * result.grid_counts['3'] if result.grid_counts['3'] > 0 else '-' }}<span>3</span></div>
-                <div class="grid-cell">{{ '5 ' * result.grid_counts['5'] if result.grid_counts['5'] > 0 else '-' }}<span>5</span></div>
-                <div class="grid-cell">{{ '7 ' * result.grid_counts['7'] if result.grid_counts['7'] > 0 else '-' }}<span>7</span></div>
-                <div class="grid-cell">{{ '8 ' * result.grid_counts['8'] if result.grid_counts['8'] > 0 else '-' }}<span>8</span></div>
-                <div class="grid-cell">{{ '1 ' * result.grid_counts['1'] if result.grid_counts['1'] > 0 else '-' }}<span>1</span></div>
-                <div class="grid-cell">{{ '6 ' * result.grid_counts['6'] if result.grid_counts['6'] > 0 else '-' }}<span>6</span></div>
-            </div>
+<div class='hero'>
+<h1>🔮 Numero Annand AI — FREE EDITION</h1>
+<p>
+Complete Free Numerology Analysis Platform with Lo Shu Grid,
+Personality Blueprint, Career Guidance, Spiritual Analysis,
+Relationship Insights and Future Forecast System.
+</p>
+</div>
 
-            <h4>AI Interpretations:</h4>
-            <ul>
-                {% for insight in result.insights %}
-                <li>{{ insight }}</li>
-                {% endfor %}
-            </ul>
-        </div>
-        {% endif %}
-    </div>
+<div class='container'>
+
+<div class='card'>
+<h2>🔍 Start Free Analysis</h2>
+
+<form method='POST' action='/analyze'>
+
+<label>Full Name</label>
+<input type='text' name='name' required>
+
+<label>Date Of Birth</label>
+<input type='text' name='dob' placeholder='DD-MM-YYYY' required>
+
+<button type='submit'>Analyze Now — 100% Free</button>
+
+</form>
+</div>
+
+{{content|safe}}
+
+</div>
+
+<div class='footer'>
+Numero Annand AI Free Edition
+</div>
+
 </body>
 </html>
 """
 
-@app.route("/", methods=["GET", "POST"])
+# =========================================================
+# HOME
+# =========================================================
+
+@app.route('/')
 def home():
-    result = None
-    name = ""
-    if request.method == "POST":
-        name = request.form.get("name")
-        dob = request.form.get("dob")
-        result = analyze_numerology(name, dob)
-    return render_template_string(HTML_LAYOUT, result=result, name=name)
+
+    return render_template_string(
+        PAGE,
+        content=""
+    )
+
+# =========================================================
+# ANALYZE
+# =========================================================
+
+@app.route('/analyze', methods=['POST'])
+def analyze():
+
+    try:
+
+        name = request.form.get('name')
+        dob = request.form.get('dob')
+
+        engine = NumerologyEngine(name,dob)
+        engine.calculate()
+
+        missing = [n for n in range(1,10) if engine.freq[n] == 0]
+        repeated = [n for n,c in engine.freq.items() if c >= 2]
+
+        energy = random.randint(80,99)
+
+        result = f"""
+
+<div class='card'>
+
+<h2>📘 CORE NUMEROLOGY PROFILE</h2>
+
+<p><b>Name:</b> {name}</p>
+<p><b>Date Of Birth:</b> {dob}</p>
+
+<p><b>Driver Number:</b> <span class='badge'>{engine.driver}</span></p>
+
+<p><b>Conductor Number:</b> <span class='badge'>{engine.conductor}</span></p>
+
+<p><b>Name Number:</b> <span class='badge'>{engine.name_single}</span></p>
+
+<p><b>Compound Name Value:</b> <span class='badge'>{engine.name_total}</span></p>
+
+<h3>⚡ Energy Score: {energy}%</h3>
+
+<p class='small'>
+Your chart shows strong energetic patterns connected with personality,
+thinking style, emotions, destiny path and karmic learning.
+</p>
+
+</div>
+
+<div class='card'>
+
+<h2>📗 FULL LO SHU GRID</h2>
+
+{engine.loshu_html()}
+
+<h3>🔍 Missing Numbers</h3>
+
+<p class='small'>
+{missing if missing else "No missing numbers found."}
+</p>
+
+<h3>🔥 Repeated Numbers</h3>
+
+<p class='small'>
+{repeated if repeated else "No repeated numbers found."}
+</p>
+
+</div>
+
+<div class='card'>
+
+<h2>🧠 PERSONALITY ANALYSIS</h2>
+
+<p class='small'>
+Your numerology profile indicates a personality influenced by emotional
+sensitivity, practical thinking and long-term growth potential.
+You naturally seek stability, recognition and meaningful progress.
+</p>
+
+<h3>💼 Career Guidance</h3>
+
+<p class='small'>
+Suitable fields include communication, management, business,
+guidance, teaching, spirituality, consulting and leadership roles.
+</p>
+
+<h3>❤️ Relationship Guidance</h3>
+
+<p class='small'>
+Relationship harmony improves through emotional openness,
+balanced communication and patience.
+</p>
+
+<h3>💰 Financial Guidance</h3>
+
+<p class='small'>
+Financial stability grows through discipline,
+strategic planning and consistency.
+</p>
+
+</div>
+
+<div class='card'>
+
+<h2>🪷 Spiritual & Future Analysis</h2>
+
+<h3>📈 Future Forecast</h3>
+
+<p class='small'>
+Upcoming cycles indicate opportunities for self-growth,
+career improvements and emotional maturity.
+</p>
+
+<h3>🧿 Remedies</h3>
+
+<ul class='small'>
+<li>Practice meditation daily.</li>
+<li>Maintain disciplined routine.</li>
+<li>Avoid negative environments.</li>
+<li>Use positive affirmations consistently.</li>
+</ul>
+
+<h3>🍀 Lucky Indicators</h3>
+
+<ul class='small'>
+<li>Lucky Numbers: {engine.driver}, {engine.conductor}, {engine.name_single}</li>
+<li>Lucky Days: Sunday, Wednesday, Friday</li>
+<li>Lucky Colors: Aqua Blue, White, Emerald Green</li>
+</ul>
+
+</div>
+
+"""
+
+        return render_template_string(
+            PAGE,
+            content=result
+        )
+
+    except Exception as e:
+
+        return render_template_string(
+            PAGE,
+            content=f"<div class='card'><h3>Error:</h3><p>{str(e)}</p></div>"
+        )
+
+# =========================================================
+# RUN
+# =========================================================
 
 if __name__ == "__main__":
-    app.run(debug=True)
+    app.run(debug=True, port=8501)
