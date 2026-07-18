@@ -15,14 +15,52 @@
 # ✔ SAME PREMIUM DESIGN
 # =========================================================
 
-from flask import Flask, render_template_string, request
+from flask import Flask, render_template_string, request, jsonify
 from datetime import datetime
 from dateutil import parser
 import random
 import re
+import os
+from dotenv import load_dotenv
+
+# Load environment variables
+load_dotenv()
+
+from models import db, User, Order, Payment, Report, AIChat, Consultation, Admin, AIMessageCounter, ActivityLog
+from auth import generate_token, verify_token, register_user, login_user, token_required, admin_required
+from payment import create_order, generate_qr_code, create_payment_record, verify_payment, admin_verify_payment, PRICING
+from membership import (
+    create_membership_order, activate_membership, get_membership_status,
+    get_membership_details, get_all_plans, is_membership_valid, get_days_until_expiry,
+    is_expiring_soon, get_membership_stats, MEMBERSHIP_PLANS, get_expiring_memberships
+)
+from ai_assistant import (
+    AnnandAI, save_ai_chat, get_chat_history, clear_chat_history,
+    can_send_message, get_remaining_messages, log_message_sent
+)
+from customer_dashboard import (
+    get_dashboard_overview, get_user_orders, get_order_details,
+    get_user_reports, get_user_downloads, get_user_consultations,
+    book_consultation, update_profile, get_user_preferences,
+    update_preferences, log_download, get_user_payments
+)
+from report_generator import (
+    generate_premium_report, get_report_text_content, mark_report_as_completed,
+    get_report_by_order, NumerologyAnalyzer
+)
 
 app = Flask(__name__)
-app.secret_key = "numero-annand-ai"
+app.secret_key = os.getenv('SECRET_KEY', "numero-annand-ai-secret-2024")
+
+# Database Configuration
+app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv('DATABASE_URL', 'sqlite:///numero_annand.db')
+app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
+
+# Initialize database
+db.init_app(app)
+
+with app.app_context():
+    db.create_all()
 
 # =========================================================
 # LINKS
@@ -1200,6 +1238,1095 @@ more than shortcuts.
             content=f"<div class='card'><div class='warning'>Error: {str(e)}</div></div>",
             t=TRANSLATIONS['en']
         )
+
+# =========================================================
+# API ROUTES - AUTHENTICATION
+# =========================================================
+
+@app.route('/api/auth/register', methods=['POST'])
+def api_register():
+    data = request.get_json()
+    
+    if not data.get('email') or not data.get('password') or not data.get('name'):
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    user, error = register_user(
+        email=data['email'],
+        password=data['password'],
+        name=data['name'],
+        mobile=data.get('mobile', ''),
+        language=data.get('language', 'en')
+    )
+    
+    if error:
+        return jsonify({'error': error}), 409
+    
+    token = generate_token(user.id, user.role)
+    
+    return jsonify({
+        'success': True,
+        'user': user.to_dict(),
+        'token': token
+    }), 201
+
+@app.route('/api/auth/login', methods=['POST'])
+def api_login():
+    data = request.get_json()
+    
+    if not data.get('email') or not data.get('password'):
+        return jsonify({'error': 'Email and password required'}), 400
+    
+    user, token, error = login_user(data['email'], data['password'])
+    
+    if error:
+        return jsonify({'error': error}), 401
+    
+    return jsonify({
+        'success': True,
+        'user': user.to_dict(),
+        'token': token
+    }), 200
+
+@app.route('/api/auth/me', methods=['GET'])
+@token_required
+def api_get_user():
+    user = User.query.get(request.user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    return jsonify({
+        'success': True,
+        'user': user.to_dict()
+    }), 200
+
+# =========================================================
+# API ROUTES - MEMBERSHIP
+# =========================================================
+
+@app.route('/api/membership/plans', methods=['GET'])
+def api_get_membership_plans():
+    plans = get_all_plans()
+    
+    return jsonify({
+        'success': True,
+        'plans': plans
+    }), 200
+
+@app.route('/api/membership/status', methods=['GET'])
+@token_required
+def api_get_membership_status():
+    status = get_membership_status(request.user_id)
+    
+    if not status:
+        return jsonify({'error': 'User not found'}), 404
+    
+    return jsonify({
+        'success': True,
+        'status': status
+    }), 200
+
+@app.route('/api/membership/subscribe', methods=['POST'])
+@token_required
+def api_subscribe_membership():
+    data = request.get_json()
+    plan_duration = data.get('plan')
+    
+    if not plan_duration:
+        return jsonify({'error': 'Plan duration required'}), 400
+    
+    # Create membership order
+    order, error = create_membership_order(request.user_id, plan_duration)
+    
+    if error:
+        return jsonify({'error': error}), 400
+    
+    plan = get_membership_details(plan_duration)
+    
+    # Generate QR code for payment
+    qr_data = generate_qr_code(plan['price'], order.id)
+    
+    # Create payment record
+    payment, error = create_payment_record(order.id, plan['price'], qr_data['upi_string'])
+    
+    if error:
+        return jsonify({'error': error}), 400
+    
+    return jsonify({
+        'success': True,
+        'order': order.to_dict(),
+        'plan': plan,
+        'payment': {
+            'qr_image': qr_data['image'],
+            'upi_id': qr_data['upi_id'],
+            'payee_name': qr_data['payee_name'],
+            'amount': qr_data['amount'],
+            'currency': qr_data['currency'],
+            'reference': qr_data['reference']
+        }
+    }), 201
+
+@app.route('/api/membership/verify', methods=['POST'])
+@token_required
+def api_verify_membership_payment():
+    data = request.get_json()
+    order_id = data.get('order_id')
+    utr = data.get('utr')
+    
+    if not order_id or not utr:
+        return jsonify({'error': 'Order ID and UTR required'}), 400
+    
+    order = Order.query.get(order_id)
+    if not order or order.user_id != request.user_id:
+        return jsonify({'error': 'Order not found'}), 404
+    
+    success, message = verify_payment(order_id, utr)
+    
+    if not success:
+        return jsonify({'error': message}), 400
+    
+    return jsonify({
+        'success': True,
+        'message': message
+    }), 200
+
+@app.route('/api/membership/activate/<int:order_id>', methods=['POST'])
+@admin_required
+def api_activate_membership(order_id):
+    order = Order.query.get(order_id)
+    
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+    
+    if order.report_type != 'membership':
+        return jsonify({'error': 'Not a membership order'}), 400
+    
+    # Extract plan duration from order
+    plan_duration = order.order_id.split('MEM')[1][-8:]
+    
+    # Determine plan based on amount
+    for plan_id, plan_data in MEMBERSHIP_PLANS.items():
+        if plan_data['price'] == order.amount:
+            plan_duration = plan_id
+            break
+    
+    # Activate membership
+    success, message = activate_membership(order.user_id, plan_duration)
+    
+    if not success:
+        return jsonify({'error': message}), 400
+    
+    # Update order status
+    order.status = 'completed'
+    db.session.commit()
+    
+    return jsonify({
+        'success': True,
+        'message': message
+    }), 200
+
+# =========================================================
+# API ROUTES - ORDERS & PAYMENTS
+# =========================================================
+
+@app.route('/api/orders/create', methods=['POST'])
+@token_required
+def api_create_order():
+    data = request.get_json()
+    report_type = data.get('report_type', 'digital')
+    
+    amount = PRICING.get(f'{report_type}_report', 0)
+    if not amount:
+        return jsonify({'error': 'Invalid report type'}), 400
+    
+    order = create_order(request.user_id, report_type, amount)
+    
+    # Generate QR code
+    qr_data = generate_qr_code(amount, order.id)
+    
+    # Create payment record
+    payment, error = create_payment_record(order.id, amount, qr_data['upi_string'])
+    
+    if error:
+        return jsonify({'error': error}), 400
+    
+    return jsonify({
+        'success': True,
+        'order': order.to_dict(),
+        'payment': {
+            'qr_image': qr_data['image'],
+            'upi_id': qr_data['upi_id'],
+            'payee_name': qr_data['payee_name'],
+            'amount': qr_data['amount'],
+            'currency': qr_data['currency'],
+            'reference': qr_data['reference']
+        }
+    }), 201
+
+@app.route('/api/orders/<int:order_id>', methods=['GET'])
+@token_required
+def api_get_order(order_id):
+    order = Order.query.get(order_id)
+    
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+    
+    if order.user_id != request.user_id and request.user_role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    return jsonify({
+        'success': True,
+        'order': order.to_dict()
+    }), 200
+
+@app.route('/api/orders/verify', methods=['POST'])
+@token_required
+def api_verify_payment():
+    data = request.get_json()
+    order_id = data.get('order_id')
+    utr = data.get('utr')
+    
+    if not order_id or not utr:
+        return jsonify({'error': 'Order ID and UTR required'}), 400
+    
+    success, message = verify_payment(order_id, utr)
+    
+    if not success:
+        return jsonify({'error': message}), 400
+    
+    return jsonify({
+        'success': True,
+        'message': message
+    }), 200
+
+# =========================================================
+# API ROUTES - ADMIN DASHBOARD
+# =========================================================
+
+@app.route('/api/admin/analytics', methods=['GET'])
+@admin_required
+def api_admin_analytics():
+    from admin_utils import get_dashboard_analytics
+    
+    analytics = get_dashboard_analytics()
+    
+    return jsonify({
+        'success': True,
+        'analytics': analytics
+    }), 200
+
+@app.route('/api/admin/pending-payments', methods=['GET'])
+@admin_required
+def api_admin_pending_payments():
+    from admin_utils import get_pending_payments
+    
+    pending = get_pending_payments()
+    
+    return jsonify({
+        'success': True,
+        'payments': pending,
+        'count': len(pending)
+    }), 200
+
+@app.route('/api/admin/verify-payment/<int:order_id>', methods=['POST'])
+@admin_required
+def api_admin_verify_payment(order_id):
+    from admin_utils import verify_payment_admin
+    
+    data = request.get_json()
+    verified = data.get('verified', True)
+    
+    success, message = verify_payment_admin(order_id, verified)
+    
+    if not success:
+        return jsonify({'error': message}), 400
+    
+    return jsonify({
+        'success': True,
+        'message': message
+    }), 200
+
+@app.route('/api/admin/users', methods=['GET'])
+@admin_required
+def api_admin_get_users():
+    from admin_utils import get_all_users, search_users
+    
+    page = request.args.get('page', 1, type=int)
+    search = request.args.get('search', '')
+    
+    if search:
+        users_data = search_users(search)
+        return jsonify({
+            'success': True,
+            'users': users_data,
+            'total': len(users_data)
+        }), 200
+    
+    result = get_all_users(page=page)
+    
+    return jsonify({
+        'success': True,
+        **result
+    }), 200
+
+@app.route('/api/admin/users/<int:user_id>', methods=['GET'])
+@admin_required
+def api_admin_get_user_details(user_id):
+    from admin_utils import get_user_details
+    
+    user = get_user_details(user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    return jsonify({
+        'success': True,
+        'user': user
+    }), 200
+
+@app.route('/api/admin/reports', methods=['GET'])
+@admin_required
+def api_admin_get_reports():
+    from admin_utils import get_all_reports
+    
+    page = request.args.get('page', 1, type=int)
+    
+    result = get_all_reports(page=page)
+    
+    return jsonify({
+        'success': True,
+        **result
+    }), 200
+
+@app.route('/api/admin/verified-payments', methods=['GET'])
+@admin_required
+def api_admin_verified_payments():
+    from admin_utils import get_verified_payments
+    
+    payments = get_verified_payments()
+    
+    return jsonify({
+        'success': True,
+        'payments': payments,
+        'count': len(payments)
+    }), 200
+
+@app.route('/api/admin/revenue', methods=['GET'])
+@admin_required
+def api_admin_revenue():
+    from admin_utils import get_revenue_by_date
+    
+    days = request.args.get('days', 30, type=int)
+    
+    revenue_data = get_revenue_by_date(days=days)
+    
+    return jsonify({
+        'success': True,
+        'revenue': revenue_data,
+        'total': sum(revenue_data.values())
+    }), 200
+
+@app.route('/api/admin/activity-logs', methods=['GET'])
+@admin_required
+def api_admin_activity_logs():
+    from admin_utils import get_activity_logs
+    
+    limit = request.args.get('limit', 100, type=int)
+    
+    logs = get_activity_logs(limit=limit)
+    
+    return jsonify({
+        'success': True,
+        'logs': logs,
+        'count': len(logs)
+    }), 200
+
+@app.route('/api/admin/contact-messages', methods=['GET'])
+@admin_required
+def api_admin_contact_messages():
+    from admin_utils import get_contact_messages
+    
+    status = request.args.get('status', 'new')
+    
+    messages = get_contact_messages(status=status)
+    
+    return jsonify({
+        'success': True,
+        'messages': messages,
+        'count': len(messages)
+    }), 200
+
+@app.route('/api/admin/contact-messages/<int:message_id>/reply', methods=['POST'])
+@admin_required
+def api_admin_reply_contact(message_id):
+    from admin_utils import mark_message_as_replied
+    
+    success = mark_message_as_replied(message_id)
+    
+    if not success:
+        return jsonify({'error': 'Message not found'}), 404
+    
+    return jsonify({
+        'success': True,
+        'message': 'Message marked as replied'
+    }), 200
+
+@app.route('/api/admin/login', methods=['POST'])
+def api_admin_login():
+    data = request.get_json()
+    
+    if not data.get('email') or not data.get('password'):
+        return jsonify({'error': 'Email and password required'}), 400
+    
+    admin = Admin.query.filter_by(email=data['email']).first()
+    
+    if not admin or not admin.check_password(data['password']):
+        return jsonify({'error': 'Invalid email or password'}), 401
+    
+    token = generate_token(admin.id, role='admin')
+    
+    return jsonify({
+        'success': True,
+        'admin': {
+            'id': admin.id,
+            'email': admin.email,
+            'name': admin.name,
+            'role': admin.role
+        },
+        'token': token
+    }), 200
+
+@app.route('/api/admin/stats', methods=['GET'])
+@admin_required
+def api_admin_stats():
+    from admin_utils import get_dashboard_analytics, get_membership_stats
+    
+    analytics = get_dashboard_analytics()
+    membership_stats = get_membership_stats()
+    
+    return jsonify({
+        'success': True,
+        'analytics': analytics,
+        'membership': membership_stats
+    }), 200
+
+# =========================================================
+# API ROUTES - REPORT GENERATION
+# =========================================================
+
+@app.route('/api/reports/generate', methods=['POST'])
+@token_required
+def api_generate_report():
+    data = request.get_json()
+    
+    order_id = data.get('order_id')
+    name = data.get('name')
+    dob = data.get('dob')
+    mobile = data.get('mobile', '')
+    
+    if not all([order_id, name, dob]):
+        return jsonify({'error': 'Missing required fields'}), 400
+    
+    # Generate report
+    report, error = generate_premium_report(request.user_id, order_id, name, dob, mobile)
+    
+    if error:
+        return jsonify({'error': error}), 400
+    
+    # Mark order as completed
+    mark_report_as_completed(order_id)
+    
+    return jsonify({
+        'success': True,
+        'report': report.to_dict(),
+        'message': 'Report generated successfully'
+    }), 201
+
+@app.route('/api/reports/<int:report_id>', methods=['GET'])
+@token_required
+def api_get_report(report_id):
+    report = Report.query.get(report_id)
+    
+    if not report:
+        return jsonify({'error': 'Report not found'}), 404
+    
+    # Check if user owns the report (via order)
+    if report.order.user_id != request.user_id and request.user_role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    return jsonify({
+        'success': True,
+        'report': {
+            'id': report.id,
+            'user_name': report.user_name,
+            'dob': report.dob,
+            'mobile': report.mobile,
+            'data': json.loads(report.report_data),
+            'created_at': report.created_at.isoformat(),
+            'signature': report.digital_signature
+        }
+    }), 200
+
+@app.route('/api/reports/<int:report_id>/text', methods=['GET'])
+@token_required
+def api_get_report_text(report_id):
+    report = Report.query.get(report_id)
+    
+    if not report:
+        return jsonify({'error': 'Report not found'}), 404
+    
+    # Check authorization
+    if report.order.user_id != request.user_id and request.user_role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    text_content = get_report_text_content(report_id)
+    
+    return jsonify({
+        'success': True,
+        'content': text_content
+    }), 200
+
+@app.route('/api/reports/by-order/<int:order_id>', methods=['GET'])
+@token_required
+def api_get_report_by_order(order_id):
+    order = Order.query.get(order_id)
+    
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+    
+    # Check authorization
+    if order.user_id != request.user_id and request.user_role != 'admin':
+        return jsonify({'error': 'Unauthorized'}), 403
+    
+    report = get_report_by_order(order_id)
+    
+    if not report:
+        return jsonify({
+            'success': True,
+            'report': None,
+            'message': 'No report generated yet'
+        }), 200
+    
+    return jsonify({
+        'success': True,
+        'report': report.to_dict()
+    }), 200
+
+@app.route('/api/numerology/analyze', methods=['POST'])
+def api_analyze_numerology():
+    """Quick numerology analysis without authentication"""
+    
+    data = request.get_json()
+    name = data.get('name', '')
+    dob = data.get('dob', '')
+    
+    if not name or not dob:
+        return jsonify({'error': 'Name and DOB required'}), 400
+    
+    try:
+        analyzer = NumerologyAnalyzer(name, dob)
+        
+        birth_number = analyzer.calculate_birth_number(dob)
+        destiny_number = analyzer.calculate_destiny_number(dob)
+        name_number = analyzer.calculate_name_number()
+        
+        from report_generator import get_number_meaning
+        
+        return jsonify({
+            'success': True,
+            'analysis': {
+                'birth_number': birth_number,
+                'destiny_number': destiny_number,
+                'name_number': name_number,
+                'birth_meaning': get_number_meaning(birth_number),
+                'destiny_meaning': get_number_meaning(destiny_number),
+                'name_meaning': get_number_meaning(name_number)
+            }
+        }), 200
+    
+    except Exception as e:
+        return jsonify({'error': str(e)}), 400
+
+# =========================================================
+# API ROUTES - COMMUNITY & SOCIAL
+# =========================================================
+
+@app.route('/api/community/links', methods=['GET'])
+def api_community_links():
+    from community import COMMUNITY_LINKS
+    
+    return jsonify({
+        'success': True,
+        'links': COMMUNITY_LINKS
+    }), 200
+
+@app.route('/api/community/testimonials', methods=['GET'])
+def api_community_testimonials():
+    from community import get_public_testimonials
+    
+    language = request.args.get('language', 'en')
+    
+    testimonials = get_public_testimonials(language=language)
+    
+    return jsonify({
+        'success': True,
+        'testimonials': testimonials
+    }), 200
+
+@app.route('/api/community/daily-tip', methods=['GET'])
+def api_community_daily_tip():
+    from community import get_daily_tip
+    
+    language = request.args.get('language', 'en')
+    
+    tip = get_daily_tip(language=language)
+    
+    return jsonify({
+        'success': True,
+        'tip': tip
+    }), 200
+
+@app.route('/api/community/lucky-elements/<int:number>', methods=['GET'])
+def api_lucky_elements(number):
+    from community import get_lucky_numbers
+    
+    elements = get_lucky_numbers(number)
+    
+    if not elements:
+        return jsonify({'error': 'Invalid number'}), 400
+    
+    return jsonify({
+        'success': True,
+        'elements': elements
+    }), 200
+
+@app.route('/api/community/contact', methods=['POST'])
+def api_submit_contact():
+    from community import submit_contact_message
+    
+    data = request.get_json()
+    
+    contact, error = submit_contact_message(
+        name=data.get('name'),
+        email=data.get('email'),
+        mobile=data.get('mobile', ''),
+        message=data.get('message')
+    )
+    
+    if error:
+        return jsonify({'error': error}), 400
+    
+    return jsonify({
+        'success': True,
+        'message': 'Thank you for contacting us. We will reply soon.'
+    }), 201
+
+@app.route('/api/community/faq', methods=['GET'])
+def api_get_faq():
+    from community import get_faq
+    
+    language = request.args.get('language', 'en')
+    
+    faq = get_faq(language=language)
+    
+    return jsonify({
+        'success': True,
+        'faq': faq
+    }), 200
+
+@app.route('/api/community/policies/<policy_type>', methods=['GET'])
+def api_get_policy(policy_type):
+    from community import get_policy
+    
+    language = request.args.get('language', 'en')
+    
+    policy = get_policy(policy_type=policy_type, language=language)
+    
+    if not policy:
+        return jsonify({'error': 'Policy not found'}), 404
+    
+    return jsonify({
+        'success': True,
+        'policy': policy
+    }), 200
+
+@app.route('/api/community/blog', methods=['GET'])
+def api_get_blog_articles():
+    from community import get_blog_articles
+    
+    language = request.args.get('language', 'en')
+    limit = request.args.get('limit', 10, type=int)
+    
+    articles = get_blog_articles(language=language, limit=limit)
+    
+    return jsonify({
+        'success': True,
+        'articles': articles
+    }), 200
+
+@app.route('/api/community/blog/<slug>', methods=['GET'])
+def api_get_blog_article(slug):
+    from community import get_blog_article
+    
+    language = request.args.get('language', 'en')
+    
+    article = get_blog_article(slug=slug, language=language)
+    
+    if not article:
+        return jsonify({'error': 'Article not found'}), 404
+    
+    return jsonify({
+        'success': True,
+        'article': article
+    }), 200
+
+# =========================================================
+# API ROUTES - LANGUAGE & LOCALIZATION
+# =========================================================
+
+@app.route('/api/languages', methods=['GET'])
+def api_get_languages():
+    from community import get_supported_languages
+    
+    languages = get_supported_languages()
+    
+    return jsonify({
+        'success': True,
+        'languages': languages
+    }), 200
+
+@app.route('/api/user/language', methods=['PUT'])
+@token_required
+def api_set_user_language():
+    from community import set_user_language
+    
+    data = request.get_json()
+    language = data.get('language')
+    
+    if not language:
+        return jsonify({'error': 'Language required'}), 400
+    
+    success = set_user_language(request.user_id, language)
+    
+    if not success:
+        return jsonify({'error': 'Invalid language or user not found'}), 400
+    
+    return jsonify({
+        'success': True,
+        'message': f'Language set to {language}'
+    }), 200
+
+@app.route('/api/translations/<language>', methods=['GET'])
+def api_get_translations(language):
+    """Get all translations for a language"""
+    
+    # This would return common UI translations
+    translations = {
+        'en': {
+            'welcome': 'Welcome',
+            'login': 'Login',
+            'signup': 'Sign Up',
+            'logout': 'Logout'
+        },
+        'hi': {
+            'welcome': 'स्वागत है',
+            'login': 'लॉगिन करें',
+            'signup': 'साइन अप करें',
+            'logout': 'लॉगआउट'
+        },
+        'as': {
+            'welcome': 'স্বাগতম',
+            'login': 'লগইন কৰক',
+            'signup': 'সাইন আপ কৰক',
+            'logout': 'লগআউট'
+        }
+    }
+    
+    if language not in translations:
+        return jsonify({'error': 'Language not supported'}), 400
+    
+    return jsonify({
+        'success': True,
+        'translations': translations[language]
+    }), 200
+
+# =========================================================
+# API ROUTES - CUSTOMER DASHBOARD
+# =========================================================
+
+@app.route('/api/dashboard/overview', methods=['GET'])
+@token_required
+def api_dashboard_overview():
+    overview = get_dashboard_overview(request.user_id)
+    
+    if not overview:
+        return jsonify({'error': 'User not found'}), 404
+    
+    return jsonify({
+        'success': True,
+        'overview': overview
+    }), 200
+
+@app.route('/api/dashboard/orders', methods=['GET'])
+@token_required
+def api_dashboard_orders():
+    page = request.args.get('page', 1, type=int)
+    
+    result = get_user_orders(request.user_id, page=page)
+    
+    return jsonify({
+        'success': True,
+        **result
+    }), 200
+
+@app.route('/api/dashboard/orders/<int:order_id>', methods=['GET'])
+@token_required
+def api_dashboard_order_details(order_id):
+    details = get_order_details(order_id, request.user_id)
+    
+    if not details:
+        return jsonify({'error': 'Order not found'}), 404
+    
+    return jsonify({
+        'success': True,
+        'order': details
+    }), 200
+
+@app.route('/api/dashboard/reports', methods=['GET'])
+@token_required
+def api_dashboard_reports():
+    page = request.args.get('page', 1, type=int)
+    
+    result = get_user_reports(request.user_id, page=page)
+    
+    return jsonify({
+        'success': True,
+        **result
+    }), 200
+
+@app.route('/api/dashboard/downloads', methods=['GET'])
+@token_required
+def api_dashboard_downloads():
+    page = request.args.get('page', 1, type=int)
+    
+    result = get_user_downloads(request.user_id, page=page)
+    
+    return jsonify({
+        'success': True,
+        **result
+    }), 200
+
+@app.route('/api/dashboard/downloads/<int:report_id>', methods=['POST'])
+@token_required
+def api_dashboard_log_download(report_id):
+    ip_address = request.remote_addr
+    
+    success = log_download(request.user_id, report_id, ip_address)
+    
+    if not success:
+        return jsonify({'error': 'Report not found'}), 404
+    
+    return jsonify({
+        'success': True,
+        'message': 'Download logged'
+    }), 200
+
+@app.route('/api/dashboard/consultations', methods=['GET'])
+@token_required
+def api_dashboard_consultations():
+    page = request.args.get('page', 1, type=int)
+    
+    result = get_user_consultations(request.user_id, page=page)
+    
+    return jsonify({
+        'success': True,
+        **result
+    }), 200
+
+@app.route('/api/dashboard/consultations/book', methods=['POST'])
+@token_required
+def api_dashboard_book_consultation():
+    data = request.get_json()
+    
+    consultation, error = book_consultation(
+        request.user_id,
+        consultation_type=data.get('type'),
+        scheduled_date=data.get('date'),
+        language=data.get('language', 'en'),
+        notes=data.get('notes', '')
+    )
+    
+    if error:
+        return jsonify({'error': error}), 400
+    
+    return jsonify({
+        'success': True,
+        'consultation': consultation.to_dict()
+    }), 201
+
+@app.route('/api/dashboard/payments', methods=['GET'])
+@token_required
+def api_dashboard_payments():
+    page = request.args.get('page', 1, type=int)
+    
+    result = get_user_payments(request.user_id, page=page)
+    
+    return jsonify({
+        'success': True,
+        **result
+    }), 200
+
+@app.route('/api/dashboard/profile', methods=['GET'])
+@token_required
+def api_dashboard_profile():
+    user = User.query.get(request.user_id)
+    
+    if not user:
+        return jsonify({'error': 'User not found'}), 404
+    
+    return jsonify({
+        'success': True,
+        'profile': user.to_dict()
+    }), 200
+
+@app.route('/api/dashboard/profile', methods=['PUT'])
+@token_required
+def api_dashboard_update_profile():
+    data = request.get_json()
+    
+    success, message = update_profile(request.user_id, **data)
+    
+    if not success:
+        return jsonify({'error': message}), 400
+    
+    user = User.query.get(request.user_id)
+    
+    return jsonify({
+        'success': True,
+        'profile': user.to_dict()
+    }), 200
+
+@app.route('/api/dashboard/preferences', methods=['GET'])
+@token_required
+def api_dashboard_preferences():
+    preferences = get_user_preferences(request.user_id)
+    
+    if not preferences:
+        return jsonify({'error': 'User not found'}), 404
+    
+    return jsonify({
+        'success': True,
+        'preferences': preferences
+    }), 200
+
+@app.route('/api/dashboard/preferences', methods=['PUT'])
+@token_required
+def api_dashboard_update_preferences():
+    data = request.get_json()
+    
+    success = update_preferences(request.user_id, data)
+    
+    if not success:
+        return jsonify({'error': 'Failed to update preferences'}), 400
+    
+    preferences = get_user_preferences(request.user_id)
+    
+    return jsonify({
+        'success': True,
+        'preferences': preferences
+    }), 200
+
+# =========================================================
+# API ROUTES - AI ASSISTANT
+# =========================================================
+
+@app.route('/api/ai/greeting', methods=['GET'])
+def api_ai_greeting():
+    language = request.args.get('language', 'en')
+    ai = AnnandAI(language=language)
+    
+    return jsonify({
+        'success': True,
+        'greeting': ai.get_greeting(),
+        'suggested_questions': ai.get_suggested_questions()
+    }), 200
+
+@app.route('/api/ai/message', methods=['POST'])
+def api_ai_message():
+    data = request.get_json()
+    message = data.get('message', '').strip()
+    language = data.get('language', 'en')
+    user_id = data.get('user_id')
+    
+    if not message:
+        return jsonify({'error': 'Message cannot be empty'}), 400
+    
+    # Check if user is authenticated
+    if user_id:
+        user = User.query.get(user_id)
+        if not user:
+            return jsonify({'error': 'User not found'}), 404
+        
+        # Check message limit
+        if not can_send_message(user_id):
+            remaining = get_remaining_messages(user_id)
+            return jsonify({
+                'error': 'Message limit reached',
+                'remaining': remaining,
+                'upgrade_message': 'Upgrade to Premium for unlimited messages'
+            }), 429
+    
+    # Generate AI response
+    ai = AnnandAI(language=language)
+    response = ai.process_message(message)
+    
+    # Save chat if user is authenticated
+    if user_id:
+        save_ai_chat(user_id, message, response, language)
+        log_message_sent(user_id)
+    
+    return jsonify({
+        'success': True,
+        'response': response,
+        'remaining_messages': get_remaining_messages(user_id) if user_id else -1
+    }), 200
+
+@app.route('/api/ai/history', methods=['GET'])
+@token_required
+def api_ai_history():
+    limit = request.args.get('limit', 20, type=int)
+    
+    history = get_chat_history(request.user_id, limit=limit)
+    
+    return jsonify({
+        'success': True,
+        'history': history,
+        'count': len(history)
+    }), 200
+
+@app.route('/api/ai/clear', methods=['POST'])
+@token_required
+def api_ai_clear():
+    clear_chat_history(request.user_id)
+    
+    return jsonify({
+        'success': True,
+        'message': 'Chat history cleared'
+    }), 200
+
+@app.route('/api/ai/limits', methods=['GET'])
+@token_required
+def api_ai_limits():
+    remaining = get_remaining_messages(request.user_id)
+    user = User.query.get(request.user_id)
+    
+    return jsonify({
+        'success': True,
+        'remaining': remaining,
+        'role': user.role,
+        'is_premium': user.is_premium(),
+        'unlimited': remaining == -1
+    }), 200
 
 # =========================================================
 # RUN
