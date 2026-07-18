@@ -277,9 +277,9 @@ class AIMessageCounter(db.Model):
         if user.role == UserRole.PREMIUM.value or user.is_premium():
             return True
         if user.role == UserRole.BASIC.value:
-            return self.message_count < 1  # 1 message per day
+            return self.message_count < 30  # 30 messages per day
         if user.role == UserRole.GUEST.value:
-            return self.message_count < 1  # 1 message only
+            return self.message_count < 1  # 1 message per day
         
         return False
     

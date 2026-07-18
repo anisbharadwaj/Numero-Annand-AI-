@@ -266,7 +266,7 @@ auto_qr = AutoQRGenerator()
 def generate_payment_qr(amount, order_id, upi_id="anand@okhdfcbank"):
     """Auto-generate payment QR for orders"""
     
-    upi_string = f"upi://pay?pa={upi_id}&pn=NumeroAnnand&am={amount}&tn=Order%20{order_id}&tr={order_id}"
+    upi_string = f"upi://pay?pa={upi_id}&pn=Ananda%20Sarmah&am={amount}&tn=Order%20{order_id}&tr={order_id}"
     
     qr_data = auto_qr.generate_qr_with_metadata(
         upi_string,

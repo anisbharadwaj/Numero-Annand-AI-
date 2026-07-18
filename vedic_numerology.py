@@ -474,7 +474,7 @@ def get_relationship_compatibility(num1, num2):
 # =========================================================
 
 VEDIC_FINANCIAL_GUIDANCE = {
-    1: 'Invest in leadership roles and new ventures. Avoid speculation. Money comes through independent efforts.',
+    1: {'money_nature': 'Independent/Pioneering', 'guidance': 'Invest in leadership roles and new ventures. Avoid speculation. Money comes through independent efforts.'},
     2: {'money_nature': 'Saving/Conservative', 'guidance': 'Focus on security. Don\'t take unnecessary risks. Good with domestic finances.'},
     3: {'money_nature': 'Expansive/Optimistic', 'guidance': 'Avoid overconfidence. Good earning capacity. May overspend on social activities.'},
     4: {'money_nature': 'Accumulative/Practical', 'guidance': 'Steady wealth building through hard work. Excellent for long-term investments.'},
@@ -598,4 +598,53 @@ def get_vedic_year_forecast(birth_year):
         'personal_year': personal_year,
         'forecast': forecasts.get(personal_year, ''),
         'years_lived': years_lived
+    }
+
+
+# =========================================================
+# LO SHU GRID INTERPRETATION
+# =========================================================
+
+LOSHU_POSITION_MEANINGS = {
+    4: 'Concentration, practical mind, hard work, order',
+    9: 'Intelligence, name & fame, sharp memory, confidence',
+    2: 'Sensitivity, intuition, patience, emotional balance',
+    3: 'Imagination, planning, knowledge, memory',
+    5: 'Inner strength, emotional stability, leadership, health',
+    7: 'Learning, logic, travel, research, speed',
+    8: 'Confidence, patience, willpower, discipline, property',
+    1: 'Self-expression, independence, leadership, communication',
+    6: 'Family, relationships, luxury, romance, creativity'
+}
+
+LOSHU_MISSING_MEANINGS = {
+    1: 'May struggle with self-expression; practice confident communication',
+    2: 'May face emotional sensitivity; cultivate patience and grounding',
+    3: 'May lack imagination or planning; practice visualization',
+    4: 'May lack practical focus; build discipline and organization',
+    5: 'May have inner instability; develop emotional strength and meditation',
+    6: 'May face relationship challenges; nurture family bonds and love',
+    7: 'May resist learning or research; pursue knowledge and travel',
+    8: 'May lack confidence or patience; build willpower through discipline',
+    9: 'May struggle with memory or recognition; practice mental exercises'
+}
+
+def interpret_loshu(present_numbers, missing_numbers):
+    """Generate Lo Shu Grid interpretation from present and missing numbers."""
+    strengths = [f"{n}: {LOSHU_POSITION_MEANINGS.get(n, '')}" for n in present_numbers]
+    challenges = [f"{n}: {LOSHU_MISSING_MEANINGS.get(n, '')}" for n in missing_numbers]
+    summary = (
+        f"Your Lo Shu Grid has {len(present_numbers)} of 9 numbers present and "
+        f"{len(missing_numbers)} missing. "
+    )
+    if missing_numbers:
+        summary += "Missing numbers represent life lessons to develop through conscious practice."
+    else:
+        summary += "All numbers present — a balanced energetic blueprint."
+    return {
+        'strengths': strengths,
+        'challenges': challenges,
+        'summary': summary,
+        'present_count': len(present_numbers),
+        'missing_count': len(missing_numbers)
     }

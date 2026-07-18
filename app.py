@@ -23,7 +23,7 @@ from flask import (
     jsonify,
     redirect,
     url_for,
-    session
+    session,
 )
 from datetime import datetime
 from dateutil import parser
@@ -35,7 +35,7 @@ from dotenv import load_dotenv
 # Load environment variables
 load_dotenv()
 
-from models import db, User, Order, Payment, Report, AIChat, Consultation, Admin, AIMessageCounter, ActivityLog
+from models import db, User, Order, Payment, Report, AIChat, Consultation, Admin, AIMessageCounter, ActivityLog, UserRole, OrderStatus
 from auth import generate_token, verify_token, register_user, login_user, token_required, admin_required
 from payment import create_order, generate_qr_code, create_payment_record, verify_payment, admin_verify_payment, PRICING
 from membership import (
@@ -62,7 +62,7 @@ from vedic_numerology import (
     get_number_meaning, calculate_birth_number, calculate_destiny_number,
     calculate_name_number, reduce_to_single_digit, get_relationship_compatibility,
     VEDIC_CAREERS, VEDIC_FINANCIAL_GUIDANCE, get_vedic_year_forecast,
-    VEDIC_YANTRAS, LO_SHU_POSITIONS, VEDIC_SPIRITUAL_PRACTICES
+    VEDIC_YANTRAS, LO_SHU_POSITIONS, VEDIC_SPIRITUAL_PRACTICES, interpret_loshu
 )
 
 try:
@@ -92,7 +92,7 @@ with app.app_context():
 # =========================================================
 
 WHATSAPP_CONSULT_LINK = "https://wa.me/917099805039"
-WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/C5g8MVpA0SYASAyrZfsrtJ?mode=gi_t"
+WHATSAPP_GROUP_LINK = "https://chat.whatsapp.com/G23u7Yf3PuIC6Gw7GCJIMJ"
 
 MASTER_NUMBERS = {11,22,33}
 
@@ -1710,6 +1710,215 @@ def api_admin_stats():
     }), 200
 
 # =========================================================
+# API ROUTES - PAYMENT-GATED ANALYSIS
+# =========================================================
+
+def get_or_create_guest_user(email, name, mobile=None):
+    """Create or fetch a guest/basic user for payment without login."""
+    import secrets as _s
+    import bcrypt as _bc
+    dummy_hash = _bc.hashpw(_s.token_hex(16).encode(), _bc.gensalt()).decode()
+    if email:
+        existing = User.query.filter_by(email=email).first()
+        if existing:
+            return existing.id
+        try:
+            user = User(email=email, name=name, mobile=mobile, role=UserRole.BASIC.value, password_hash=dummy_hash)
+            db.session.add(user)
+            db.session.commit()
+            return user.id
+        except Exception as e:
+            db.session.rollback()
+            print(f'[guest_user] creation failed: {e}')
+    synth = f"guest_{_s.token_hex(6)}@numeroannand.local"
+    try:
+        user = User(email=synth, name=name, mobile=mobile, role=UserRole.GUEST.value, password_hash=dummy_hash)
+        db.session.add(user)
+        db.session.commit()
+        return user.id
+    except Exception as e:
+        db.session.rollback()
+        print(f'[guest_user] synth creation failed: {e}')
+        return None
+
+
+@app.route('/api/payment/analyze', methods=['POST'])
+def api_payment_analyze():
+    """Create a payment order to unlock full analysis (₹201). No login required."""
+    data = request.get_json() or {}
+    name = (data.get('name') or '').strip()
+    dob = (data.get('dob') or '').strip()
+    email = (data.get('email') or '').strip()
+    mobile = (data.get('mobile') or '').strip()
+    language = data.get('language', 'en')
+
+    if not name or not dob:
+        return jsonify({'error': 'Name and date of birth are required'}), 400
+
+    try:
+        datetime.strptime(dob, '%Y-%m-%d')
+    except ValueError:
+        return jsonify({'error': 'Date of birth must be YYYY-MM-DD'}), 400
+
+    # Get or create a user for this email/guest
+    user_id = request.user_id if hasattr(request, 'user_id') else None
+    if not user_id:
+        user_id = get_or_create_guest_user(email, name, mobile)
+
+    amount = PRICING['digital_report']
+    order = create_order(user_id, 'digital_report', amount)
+    qr_data = generate_qr_code(amount, order.id)
+    create_payment_record(order.id, amount, qr_data['upi_string'])
+
+    return jsonify({
+        'success': True,
+        'order_id': order.id,
+        'order_ref': order.order_id,
+        'amount': amount,
+        'qr_image': qr_data['image'],
+        'upi_string': qr_data['upi_string'],
+        'upi_id': qr_data['upi_id'],
+        'payee_name': qr_data['payee_name'],
+        'reference': qr_data['reference'],
+        'next_step': 'Pay ₹201 via any UPI app, then submit the 12-digit UTR below.'
+    }), 201
+
+
+@app.route('/api/payment/verify-utr', methods=['POST'])
+def api_payment_verify_utr():
+    """Submit UTR for admin verification."""
+    data = request.get_json() or {}
+    order_id = data.get('order_id')
+    utr = (data.get('utr') or '').strip()
+
+    if not order_id or not utr:
+        return jsonify({'error': 'Order ID and UTR are required'}), 400
+    if not (utr.isdigit() and len(utr) >= 10):
+        return jsonify({'error': 'UTR must be at least 10 digits'}), 400
+
+    order = Order.query.get(order_id)
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+    if order.status == OrderStatus.PAID.value:
+        return jsonify({'success': True, 'message': 'Payment already verified', 'paid': True}), 200
+
+    order.payment_utr = utr
+    order.verified = False
+    order.status = OrderStatus.PENDING.value
+    db.session.commit()
+
+    return jsonify({
+        'success': True,
+        'message': 'UTR submitted. Annand Sarma will verify your payment shortly. You will receive access once verified.',
+        'paid': False,
+        'status': 'pending_verification'
+    }), 200
+
+
+@app.route('/api/payment/status/<int:order_id>', methods=['GET'])
+def api_payment_status(order_id):
+    """Check payment status for an order."""
+    order = Order.query.get(order_id)
+    if not order:
+        return jsonify({'error': 'Order not found'}), 404
+    return jsonify({
+        'success': True,
+        'order_id': order.id,
+        'status': order.status,
+        'verified': order.verified,
+        'paid': order.status == OrderStatus.PAID.value,
+        'amount': order.amount
+    }), 200
+
+
+@app.route('/api/payment/pdf', methods=['POST'])
+def api_payment_pdf():
+    """Create a payment order to unlock PDF download (₹501)."""
+    data = request.get_json() or {}
+    name = (data.get('name') or '').strip()
+    dob = (data.get('dob') or '').strip()
+    email = (data.get('email') or '').strip()
+    mobile = (data.get('mobile') or '').strip()
+
+    if not name or not dob:
+        return jsonify({'error': 'Name and date of birth are required'}), 400
+
+    user_id = request.user_id if hasattr(request, 'user_id') else None
+    if not user_id:
+        user_id = get_or_create_guest_user(email, name, mobile)
+
+    amount = PRICING['printed_report']
+    order = create_order(user_id, 'printed_report', amount)
+    qr_data = generate_qr_code(amount, order.id)
+    create_payment_record(order.id, amount, qr_data['upi_string'])
+
+    return jsonify({
+        'success': True,
+        'order_id': order.id,
+        'order_ref': order.order_id,
+        'amount': amount,
+        'qr_image': qr_data['image'],
+        'upi_string': qr_data['upi_string'],
+        'upi_id': qr_data['upi_id'],
+        'payee_name': qr_data['payee_name'],
+        'reference': qr_data['reference'],
+        'next_step': 'Pay ₹501 via any UPI app, then submit the 12-digit UTR.'
+    }), 201
+
+
+@app.route('/api/consultation/book', methods=['POST'])
+def api_public_book_consultation():
+    """Public consultation booking (no login required)."""
+    data = request.get_json() or {}
+    name = (data.get('name') or '').strip()
+    email = (data.get('email') or '').strip()
+    mobile = (data.get('mobile') or '').strip()
+    language = data.get('language', 'en')
+    preferred_date = (data.get('date') or '').strip()
+    preferred_time = (data.get('time') or '').strip()
+    consultation_type = data.get('type', 'video')
+
+    if not name or not mobile or not preferred_date or not preferred_time:
+        return jsonify({'error': 'Name, mobile, date and time are required'}), 400
+
+    user_id = request.user_id if hasattr(request, 'user_id') else None
+    if not user_id:
+        user_id = get_or_create_guest_user(email, name, mobile)
+
+    scheduled_date = f"{preferred_date} {preferred_time}"
+    notes = f"Language: {language}, Type: {consultation_type}"
+    consultation, error = book_consultation(
+        user_id,
+        consultation_type=consultation_type,
+        scheduled_date=scheduled_date,
+        language=language,
+        notes=notes
+    )
+
+    if error:
+        return jsonify({'error': error}), 400
+
+    # Build WhatsApp confirmation link
+    wa_msg = (
+        f"Hello Annand Sarma, I booked a consultation.%0A"
+        f"Name: {name}%0A"
+        f"Date: {preferred_date}%0A"
+        f"Time: {preferred_time}%0A"
+        f"Language: {language}%0A"
+        f"Type: {consultation_type}%0A"
+        f"Booking ID: {consultation.id}"
+    )
+    wa_link = f"https://wa.me/917099805039?text={wa_msg}"
+
+    return jsonify({
+        'success': True,
+        'consultation': consultation.to_dict(),
+        'whatsapp_confirm': wa_link,
+        'message': 'Consultation booked! Please confirm via WhatsApp.'
+    }), 201
+
+
+# =========================================================
 # API ROUTES - REPORT GENERATION
 # =========================================================
 
@@ -2101,6 +2310,13 @@ def api_vedic_full_analysis():
         birth_year = int(dob_parts[0]) if len(dob_parts) >= 3 else 0
         yearly_forecast = get_vedic_year_forecast(birth_year) if birth_year > 0 else {}
         
+        # Generate Lo Shu Grid (correct, populated from DOB)
+        from report_generator import NumerologyAnalyzer
+        loshu_engine = NumerologyAnalyzer(name, dob)
+        loshu_grid = loshu_engine.get_loshu_grid(dob)
+        loshu_missing = [n for n, gd in loshu_grid.items() if not gd['present']]
+        loshu_present = [n for n, gd in loshu_grid.items() if gd['present']]
+        
         return jsonify({
             'success': True,
             'analysis': {
@@ -2130,8 +2346,17 @@ def api_vedic_full_analysis():
                         'practices': name_practices
                     }
                 },
+                'loshu_grid': {
+                    'grid': loshu_grid,
+                    'layout': loshu_engine.LOSHU_LAYOUT,
+                    'missing_numbers': loshu_missing,
+                    'present_numbers': loshu_present,
+                    'interpretation': interpret_loshu(loshu_present, loshu_missing)
+                },
                 'yearly_forecast': yearly_forecast,
-                'vedic_planets': VEDIC_PLANETS
+                'vedic_planets': VEDIC_PLANETS,
+                'payment_required': True,
+                'locked_sections': ['detailed_remedies', 'career_guidance', 'loshu_interpretation', 'yearly_forecast']
             }
         }), 200
     
@@ -2610,7 +2835,7 @@ def api_ai_limits():
 def vedic_analysis_page():
     """Serve the beautiful Vedic numerology analysis page"""
     try:
-        return render_template('vedic_analysis.html')
+        return render_template('vedic_analysis.html', year=datetime.utcnow().year, lang='en')
     except Exception as e:
         return jsonify({'error': 'Analysis page not available', 'details': str(e)}), 500
 
@@ -2632,6 +2857,18 @@ def status():
             'Multi-language Support'
         ]
     }), 200
+
+@app.route('/robots.txt')
+def robots():
+    return app.send_static_file('robots.txt')
+
+@app.route('/sitemap.xml')
+def sitemap():
+    return app.send_static_file('sitemap.xml'), 200, {'Content-Type': 'application/xml'}
+
+@app.route('/manifest.json')
+def manifest():
+    return app.send_static_file('manifest.json'), 200, {'Content-Type': 'application/manifest+json'}
 
 # =========================================================
 # API ROUTES - AUTO QR GENERATION SYSTEM
