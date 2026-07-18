@@ -56,6 +56,15 @@ from vedic_numerology import (
     VEDIC_YANTRAS, LO_SHU_POSITIONS, VEDIC_SPIRITUAL_PRACTICES
 )
 
+try:
+    from auto_qr_system import (
+        auto_qr, generate_payment_qr, generate_report_qr,
+        generate_sharing_qr, generate_verification_qr
+    )
+    QR_SYSTEM_AVAILABLE = True
+except ImportError:
+    QR_SYSTEM_AVAILABLE = False
+
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', "numero-annand-ai-secret-2024")
 
@@ -2650,6 +2659,154 @@ def status():
             'Multi-language Support'
         ]
     }), 200
+
+# =========================================================
+# API ROUTES - AUTO QR GENERATION SYSTEM
+# =========================================================
+
+if QR_SYSTEM_AVAILABLE:
+    
+    @app.route('/api/qr/payment', methods=['POST'])
+    def api_auto_generate_payment_qr():
+        """Auto-generate payment QR code"""
+        
+        data = request.get_json()
+        amount = data.get('amount')
+        order_id = data.get('order_id')
+        
+        if not amount or not order_id:
+            return jsonify({'error': 'Amount and order_id required'}), 400
+        
+        try:
+            qr_data = generate_payment_qr(amount, order_id)
+            return jsonify({
+                'success': True,
+                'qr_code': qr_data['qr_code'],
+                'metadata': qr_data['metadata'],
+                'timestamp': qr_data['timestamp']
+            }), 200
+        except Exception as e:
+            return jsonify({'error': f'QR generation failed: {str(e)}'}), 400
+    
+    @app.route('/api/qr/report/<int:report_id>', methods=['GET'])
+    def api_auto_generate_report_qr(report_id):
+        """Auto-generate QR for report downloads"""
+        
+        user_email = request.args.get('email', 'user@numero-annand.ai')
+        
+        try:
+            qr_data = generate_report_qr(report_id, user_email)
+            return jsonify({
+                'success': True,
+                'qr_code': qr_data['qr_code'],
+                'metadata': qr_data['metadata']
+            }), 200
+        except Exception as e:
+            return jsonify({'error': f'QR generation failed: {str(e)}'}), 400
+    
+    @app.route('/api/qr/share/<content_type>/<content_id>', methods=['GET'])
+    def api_auto_generate_sharing_qr(content_type, content_id):
+        """Auto-generate QR for social sharing"""
+        
+        try:
+            qr_data = generate_sharing_qr(content_id, content_type)
+            return jsonify({
+                'success': True,
+                'qr_code': qr_data['qr_code'],
+                'share_url': f"https://numero-annand.ai/share/{content_type}/{content_id}",
+                'metadata': qr_data['metadata']
+            }), 200
+        except Exception as e:
+            return jsonify({'error': f'QR generation failed: {str(e)}'}), 400
+    
+    @app.route('/api/qr/verify/<token>', methods=['GET'])
+    def api_auto_generate_verification_qr(token):
+        """Auto-generate QR for verification"""
+        
+        try:
+            qr_data = generate_verification_qr(token)
+            return jsonify({
+                'success': True,
+                'qr_code': qr_data['qr_code'],
+                'verify_url': f"https://numero-annand.ai/verify/{token}",
+                'metadata': qr_data['metadata']
+            }), 200
+        except Exception as e:
+            return jsonify({'error': f'QR generation failed: {str(e)}'}), 400
+    
+    @app.route('/api/qr/generate', methods=['POST'])
+    def api_qr_generate_custom():
+        """Generate custom styled QR code"""
+        
+        data = request.get_json()
+        content = data.get('content')
+        style = data.get('style', 'professional')
+        
+        if not content:
+            return jsonify({'error': 'Content required'}), 400
+        
+        if style not in ['professional', 'vibrant', 'minimal', 'spiritual']:
+            return jsonify({'error': 'Invalid style. Use: professional, vibrant, minimal, spiritual'}), 400
+        
+        try:
+            qr_base64 = auto_qr.generate_cached_qr(content, format='base64', style=style)
+            return jsonify({
+                'success': True,
+                'qr_code': qr_base64,
+                'style': style,
+                'content': content
+            }), 200
+        except Exception as e:
+            return jsonify({'error': f'QR generation failed: {str(e)}'}), 400
+    
+    @app.route('/api/qr/bulk', methods=['POST'])
+    def api_qr_bulk_generate():
+        """Generate multiple QR codes efficiently"""
+        
+        data = request.get_json()
+        data_list = data.get('data', [])
+        style = data.get('style', 'professional')
+        
+        if not data_list or not isinstance(data_list, list):
+            return jsonify({'error': 'Data array required'}), 400
+        
+        try:
+            qr_codes = auto_qr.bulk_generate_qrs(data_list, style=style)
+            return jsonify({
+                'success': True,
+                'qr_codes': qr_codes,
+                'total': len(qr_codes),
+                'successful': sum(1 for qr in qr_codes if qr.get('status') == 'success')
+            }), 200
+        except Exception as e:
+            return jsonify({'error': f'Bulk QR generation failed: {str(e)}'}), 400
+    
+    @app.route('/api/qr/stats', methods=['GET'])
+    def api_qr_cache_stats():
+        """Get QR cache statistics"""
+        
+        try:
+            stats = auto_qr.get_qr_stats()
+            return jsonify({
+                'success': True,
+                'stats': stats
+            }), 200
+        except Exception as e:
+            return jsonify({'error': f'Failed to get stats: {str(e)}'}), 400
+    
+    @app.route('/api/qr/clear-cache', methods=['POST'])
+    @admin_required
+    def api_qr_clear_cache():
+        """Clear expired QR cache"""
+        
+        try:
+            result = auto_qr.clear_expired_cache()
+            return jsonify({
+                'success': True,
+                'result': result
+            }), 200
+        except Exception as e:
+            return jsonify({'error': f'Failed to clear cache: {str(e)}'}), 400
 
 # =========================================================
 # RUN
