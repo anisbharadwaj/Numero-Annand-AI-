@@ -52,18 +52,37 @@ class NumerologyAnalyzer:
         
         return n
     
+    def _parse_dob(self, dob_str):
+        """Parse DOB into (day, month, year). Supports DD-MM-YYYY and YYYY-MM-DD."""
+        parts = dob_str.replace('/', '-').split('-')
+        parts = [int(p) for p in parts if p]
+        if len(parts) < 3:
+            raise ValueError(f"Invalid DOB: {dob_str}")
+        # YYYY-MM-DD when first part is 4 digits
+        if parts[0] > 31:
+            year, month, day = parts[0], parts[1], parts[2]
+        else:
+            day, month, year = parts[0], parts[1], parts[2]
+        return day, month, year
+
+    def _populate_freq(self, dob_str):
+        """Count digits 1-9 in the DOB for the Lo Shu Grid."""
+        day, month, year = self._parse_dob(dob_str)
+        digits = str(day) + str(month) + str(year)
+        self.freq = {i: 0 for i in range(1, 10)}
+        for ch in digits:
+            n = int(ch)
+            if 1 <= n <= 9:
+                self.freq[n] += 1
+
     def calculate_birth_number(self, dob_str):
         """Calculate birth number from date of birth"""
-        parts = dob_str.replace('/', '-').split('-')
-        day = int(parts[0])
+        day, _, _ = self._parse_dob(dob_str)
         return self.reduce(day)
     
     def calculate_destiny_number(self, dob_str):
         """Calculate destiny number"""
-        parts = dob_str.replace('/', '-').split('-')
-        day = int(parts[0])
-        month = int(parts[1])
-        year = int(parts[2])
+        day, month, year = self._parse_dob(dob_str)
         total = day + month + year
         return self.reduce(total)
     
@@ -77,6 +96,7 @@ class NumerologyAnalyzer:
     
     def get_loshu_grid(self, dob_str):
         """Generate Lo Shu Grid"""
+        self._populate_freq(dob_str)
         grid_data = {}
         
         # Populate grid with numbers
@@ -84,7 +104,8 @@ class NumerologyAnalyzer:
             for num in row:
                 grid_data[num] = {
                     'value': num,
-                    'count': self.freq.get(num, 0)
+                    'count': self.freq.get(num, 0),
+                    'present': self.freq.get(num, 0) > 0
                 }
         
         return grid_data

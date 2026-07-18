@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="{{ lang|default('en') }}">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#1a1033">
+    <title>{% block title %}Numero Annand AI - Premium Vedic Numerology{% endblock %}</title>
+    <meta name="description" content="{% block description %}Unlock your numerological destiny with Annand Sarma. Premium Vedic numerology analysis, Lo Shu Grid, remedies, compatibility & life path guidance.{% endblock %}">
+    <meta name="keywords" content="numerology, vedic numerology, lo shu grid, chaldean, destiny number, birth number, annand sarma, assam numerology">
+    <meta name="author" content="Annand Sarma">
+    <meta name="robots" content="index, follow">
+
+    <meta property="og:type" content="website">
+    <meta property="og:title" content="{% block og_title %}Numero Annand AI - Premium Vedic Numerology{% endblock %}">
+    <meta property="og:description" content="AI-powered Vedic numerology analysis by Annand Sarma. Discover your birth, destiny & name numbers, Lo Shu Grid and remedies.">
+    <meta property="og:site_name" content="Numero Annand AI">
+    <meta name="twitter:card" content="summary_large_image">
+    <meta name="twitter:title" content="Numero Annand AI - Premium Vedic Numerology">
+    <meta name="twitter:description" content="AI-powered Vedic numerology analysis by Annand Sarma.">
+
+    <link rel="canonical" href="{{ request.url }}">
+    <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'%3E%3Ctext y='.9em' font-size='90'%3E%F0%9F%94%AE%3C/text%3E%3C/svg%3E">
+    <link rel="manifest" href="/manifest.json">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+
+    <script type="application/ld+json">
+    {
+      "@context": "https://schema.org",
+      "@type": "Organization",
+      "name": "Numero Annand AI",
+      "founder": { "@type": "Person", "name": "Annand Sarma" },
+      "telephone": "+91-7099805039",
+      "areaServed": "IN",
+      "knowsAbout": ["Numerology", "Vedic Numerology", "Lo Shu Grid", "Chaldean Numerology"]
+    }
+    </script>
+
+    {% block head %}{% endblock %}
+</head>
+<body>
+    <div class="aurora" aria-hidden="true">
+        <span class="blob blob-1"></span>
+        <span class="blob blob-2"></span>
+        <span class="blob blob-3"></span>
+    </div>
+
+    <header class="site-header" id="siteHeader">
+        <div class="container nav-wrap">
+            <a href="/" class="brand" aria-label="Numero Annand AI home">
+                <span class="brand-mark">🔮</span>
+                <span class="brand-text">Numero Annand <span class="gold">AI</span></span>
+            </a>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle menu" aria-expanded="false">
+                <span></span><span></span><span></span>
+            </button>
+            <nav class="site-nav" id="siteNav">
+                <a href="{{ url_for('home') }}#features">Features</a>
+                <a href="{{ url_for('home') }}#systems">Systems</a>
+                <a href="{{ url_for('home') }}#pricing">Pricing</a>
+                <a href="{{ url_for('vedic_analysis_page') }}">Analyze</a>
+                <a href="{{ url_for('home') }}#contact">Contact</a>
+                <a href="{{ url_for('home') }}#founder" class="btn btn-ghost btn-sm">Founder</a>
+                <a href="{{ url_for('vedic_analysis_page') }}" class="btn btn-gold btn-sm">Get Started</a>
+            </nav>
+        </div>
+    </header>
+
+    <main>
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="site-footer">
+        <div class="container footer-grid">
+            <div class="footer-col">
+                <div class="brand brand-footer">
+                    <span class="brand-mark">🔮</span>
+                    <span class="brand-text">Numero Annand <span class="gold">AI</span></span>
+                </div>
+                <p class="muted">Ancient Vedic wisdom meets modern AI. Personalized numerology readings, remedies and life guidance by Annand Sarma.</p>
+                <div class="social-row">
+                    <a href="https://wa.me/917099805039" target="_blank" rel="noopener" class="wa-chip" aria-label="WhatsApp Support">💬 Support</a>
+                    <a href="https://chat.whatsapp.com/G23u7Yf3PuIC6Gw7GCJIMJ" target="_blank" rel="noopener" class="wa-chip wa-chip-community" aria-label="WhatsApp Community">👥 Community</a>
+                </div>
+            </div>
+            <div class="footer-col">
+                <h4>Explore</h4>
+                <a href="{{ url_for('home') }}#features">Features</a>
+                <a href="{{ url_for('home') }}#systems">Numerology Systems</a>
+                <a href="{{ url_for('home') }}#pricing">Pricing</a>
+                <a href="{{ url_for('vedic_analysis_page') }}">Free Analysis</a>
+            </div>
+            <div class="footer-col">
+                <h4>Services</h4>
+                <a href="{{ url_for('home') }}#pricing">Digital Report ₹201</a>
+                <a href="{{ url_for('home') }}#pricing">Printed Report ₹501</a>
+                <a href="{{ url_for('home') }}#pricing">Premium Membership</a>
+                <a href="https://wa.me/917099805039" target="_blank" rel="noopener">Consultation</a>
+            </div>
+            <div class="footer-col" id="founder">
+                <h4>Founder</h4>
+                <p class="founder-card">
+                    <strong>Annand Sarma</strong><br>
+                    <span class="muted">Numerologist · Assam, India</span><br>
+                    <a href="tel:+917099805039">+91 7099805039</a><br>
+                    <span class="muted">UPI: 7099805039-2@axl</span><br>
+                    <span class="muted">Payee: Ananda Sarmah</span>
+                </p>
+            </div>
+        </div>
+        <div class="footer-bottom">
+            <p>&copy; <span id="year">{{ year|default(2026) }}</span> Numero Annand AI · Founded by Annand Sarma · Vedic wisdom powered by AI</p>
+        </div>
+    </footer>
+
+    <!-- ANNAND AI FLOATING SIDEBAR -->
+    <button class="ai-fab" id="aiFab" aria-label="Open Annand AI assistant">
+        <span class="ai-fab-orb">🔮</span>
+        <span class="ai-fab-pulse"></span>
+    </button>
+
+    <aside class="ai-panel" id="aiPanel" aria-hidden="true" aria-label="Annand AI assistant">
+        <header class="ai-head">
+            <div class="ai-head-id">
+                <span class="ai-orb">🔮</span>
+                <div>
+                    <strong>Annand AI</strong>
+                    <small id="aiStatus">Your numerology guide</small>
+                </div>
+            </div>
+            <div class="ai-head-actions">
+                <button class="ai-icon-btn" id="aiMin" title="Minimize" aria-label="Minimize">—</button>
+                <button class="ai-icon-btn" id="aiClose" title="Close" aria-label="Close">×</button>
+            </div>
+        </header>
+
+        <div class="ai-lang-row" role="tablist" aria-label="Language">
+            <button class="ai-lang is-active" data-lang="en">EN</button>
+            <button class="ai-lang" data-lang="hi">हिंदी</button>
+            <button class="ai-lang" data-lang="as">অসমীয়া</button>
+        </div>
+
+        <div class="ai-body" id="aiBody" aria-live="polite">
+            <div class="ai-msg ai-bot">
+                <div class="ai-bubble" id="aiGreeting">Hello! I am Annand AI, your personal numerology assistant. How can I help you today?</div>
+            </div>
+            <div class="ai-suggest" id="aiSuggest"></div>
+        </div>
+
+        <div class="ai-typing" id="aiTyping" hidden>
+            <span></span><span></span><span></span>
+        </div>
+
+        <div class="ai-tools">
+            <button class="ai-tool" id="aiCopy" title="Copy last response">⧉ Copy</button>
+            <button class="ai-tool" id="aiClear" title="Clear chat">🗑 Clear</button>
+            <span class="ai-limit" id="aiLimit" title="Messages left today">∞</span>
+        </div>
+
+        <form class="ai-input" id="aiForm">
+            <input type="text" id="aiText" placeholder="Ask about numerology, reports, pricing..." autocomplete="off" aria-label="Message Annand AI">
+            <button type="submit" class="ai-send" aria-label="Send">➤</button>
+        </form>
+    </aside>
+
+    <script>
+    window.NAA = {
+        greetingUrl: "{{ url_for('api_ai_greeting') }}",
+        messageUrl: "{{ url_for('api_ai_message') }}",
+        founder: "Annand Sarma",
+        whatsapp: "https://wa.me/917099805039"
+    };
+    </script>
+    <script src="{{ url_for('static', filename='script.js') }}"></script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

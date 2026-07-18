@@ -1,0 +1,22 @@
+{% extends 'base.html' %}
+{% block title %}Your Numerology Analysis | Numero Annand AI{% endblock %}
+{% block description %}Detailed Vedic numerology analysis: Driver & Conductor numbers, Lo Shu Grid, name correction, remedies and life guidance.{% endblock %}
+
+{% block content %}
+<section style="padding:80px 0">
+    <div class="container" style="max-width:1000px">
+        <div class="text-center" style="margin-bottom:40px">
+            <span class="eyebrow">Premium Report</span>
+            <h1 style="font-size:clamp(1.8rem,3.5vw,2.6rem);margin:12px 0;background:linear-gradient(135deg,#fff,#f0d97a 50%,#d4af37);-webkit-background-clip:text;background-clip:text;-webkit-text-fill-color:transparent">Your Numerological Blueprint</h1>
+            <p class="muted">A comprehensive Vedic analysis crafted by Annand Sarma's AI engine.</p>
+        </div>
+        <div class="analyze-output">
+            {{ content|safe }}
+        </div>
+        <div class="text-center" style="margin-top:36px">
+            <a href="{{ url_for('vedic_analysis_page') }}" class="btn btn-ghost btn-lg">Run New Analysis</a>
+            <a href="https://wa.me/917099805039" target="_blank" rel="noopener" class="btn btn-gold btn-lg">Consult Annand Sarma</a>
+        </div>
+    </div>
+</section>
+{% endblock %}
