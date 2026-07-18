@@ -706,37 +706,11 @@ Numero Annand AI • Premium Numerology Platform
 
 @app.route('/')
 def home():
-
-    lang = request.args.get('lang','en')
-
-    t = TRANSLATIONS.get(lang,TRANSLATIONS['en'])
-
-    content = """
-
-<div class='card'>
-
-<h2>✨ Welcome To Numero Annand AI</h2>
-
-<p class='small'>
-
-Advanced Premium Lo Shu Grid Numerology Platform powered by deep energetic analysis,
-professional numerology intelligence,
-personality interpretation systems,
-career guidance algorithms,
-karmic vibration decoding
-and futuristic spiritual analytics.
-
-</p>
-
-</div>
-
-"""
-
-    return render_template_string(
-        PAGE,
-        content=content,
-        t=t
-    )
+    """Serve the beautiful homepage with new design"""
+    try:
+        return render_template('index.html')
+    except Exception as e:
+        return jsonify({'error': 'Homepage not available', 'details': str(e)}), 500
 
 # =========================================================
 # ANALYZE
@@ -2625,21 +2599,11 @@ def api_ai_limits():
 
 @app.route('/vedic-analysis', methods=['GET'])
 def vedic_analysis_page():
-    """Serve the Vedic numerology analysis page"""
+    """Serve the beautiful Vedic numerology analysis page"""
     try:
-        with open('templates/vedic_analysis.html', 'r', encoding='utf-8') as f:
-            html_content = f.read()
-        return html_content
-    except FileNotFoundError:
-        return render_template_string('''
-            <html>
-            <body style="font-family: Arial; text-align: center; padding: 50px;">
-                <h1>Vedic Numerology Analysis</h1>
-                <p>The analysis page is loading. Please refresh the page.</p>
-                <p><a href="/">← Back to Home</a></p>
-            </body>
-            </html>
-        '''), 404
+        return render_template('vedic_analysis.html')
+    except Exception as e:
+        return jsonify({'error': 'Analysis page not available', 'details': str(e)}), 500
 
 
 
