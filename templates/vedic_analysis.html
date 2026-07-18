@@ -1,0 +1,699 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vedic Numerology - Complete Analysis | Numero Annand AI</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 40px 20px;
+            text-align: center;
+        }
+        
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+        
+        .content {
+            padding: 40px 20px;
+        }
+        
+        .form-section {
+            background: #f8f9fa;
+            padding: 30px;
+            border-radius: 10px;
+            margin-bottom: 30px;
+            border-left: 5px solid #667eea;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        .form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-group input,
+        .form-group select {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 5px;
+            font-size: 1em;
+            transition: border-color 0.3s;
+        }
+        
+        .form-group input:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        
+        button {
+            flex: 1;
+            min-width: 150px;
+            padding: 12px 30px;
+            font-size: 1em;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.3s;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .analysis-result {
+            display: none;
+            margin-top: 30px;
+        }
+        
+        .analysis-result.show {
+            display: block;
+        }
+        
+        .number-card {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 25px;
+            border-radius: 10px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.2);
+        }
+        
+        .number-card h3 {
+            font-size: 1.5em;
+            margin-bottom: 10px;
+        }
+        
+        .number-large {
+            font-size: 3em;
+            font-weight: bold;
+            text-align: center;
+            margin: 20px 0;
+            opacity: 0.9;
+        }
+        
+        .info-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .info-box h4 {
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+        
+        .info-box p, .info-box ul {
+            font-size: 0.95em;
+            line-height: 1.6;
+        }
+        
+        .info-box ul {
+            list-style-position: inside;
+        }
+        
+        .info-box li {
+            margin-bottom: 8px;
+        }
+        
+        .compatibility-section {
+            background: #fff3cd;
+            padding: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #ffc107;
+            margin-bottom: 20px;
+        }
+        
+        .compatibility-score {
+            font-size: 2em;
+            font-weight: bold;
+            color: #667eea;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .error-message {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #f5c6cb;
+            display: none;
+        }
+        
+        .error-message.show {
+            display: block;
+        }
+        
+        .success-message {
+            background: #d4edda;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin-bottom: 20px;
+            border-left: 4px solid #c3e6cb;
+            display: none;
+        }
+        
+        .success-message.show {
+            display: block;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+        }
+        
+        .loading.show {
+            display: block;
+        }
+        
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 20px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .tabs {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            border-bottom: 2px solid #ddd;
+        }
+        
+        .tab-button {
+            padding: 10px 20px;
+            background: transparent;
+            border: none;
+            cursor: pointer;
+            font-weight: 600;
+            color: #666;
+            border-bottom: 3px solid transparent;
+            transition: all 0.3s;
+        }
+        
+        .tab-button.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        
+        .tab-button:hover {
+            color: #667eea;
+        }
+        
+        .tab-content {
+            display: none;
+        }
+        
+        .tab-content.active {
+            display: block;
+        }
+        
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.8em;
+            }
+            
+            .form-section {
+                padding: 20px;
+            }
+            
+            .number-card {
+                padding: 15px;
+            }
+            
+            .number-large {
+                font-size: 2em;
+            }
+            
+            .info-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🔮 Vedic Numerology Analysis</h1>
+            <p>Discover Your Complete Numerological Blueprint</p>
+        </div>
+        
+        <div class="content">
+            <div class="error-message" id="errorMsg"></div>
+            <div class="success-message" id="successMsg"></div>
+            
+            <!-- Analysis Type Selector -->
+            <div class="form-section">
+                <div class="form-group">
+                    <label for="analysisType">Select Analysis Type:</label>
+                    <select id="analysisType">
+                        <option value="full">Full Vedic Analysis (Recommended)</option>
+                        <option value="compatibility">Relationship Compatibility</option>
+                        <option value="lifepart">Life Path & Destiny</option>
+                    </select>
+                </div>
+            </div>
+            
+            <!-- Full Analysis Form -->
+            <div id="fullAnalysisForm" class="form-section">
+                <h3>📋 Personal Information</h3>
+                <div class="form-group">
+                    <label for="name">Full Name:</label>
+                    <input type="text" id="name" placeholder="Enter your full name" required>
+                </div>
+                <div class="form-group">
+                    <label for="dob">Date of Birth:</label>
+                    <input type="date" id="dob" required>
+                </div>
+                <div class="form-group">
+                    <label for="language">Analysis Language:</label>
+                    <select id="language">
+                        <option value="en">English</option>
+                        <option value="hi">Hindi (हिंदी)</option>
+                        <option value="as">Assamese (অসমীয়া)</option>
+                    </select>
+                </div>
+                <div class="button-group">
+                    <button class="btn-primary" onclick="performFullAnalysis()">Get Full Analysis</button>
+                    <button class="btn-secondary" onclick="clearForm()">Clear</button>
+                </div>
+            </div>
+            
+            <!-- Compatibility Form (Hidden by default) -->
+            <div id="compatibilityForm" class="form-section" style="display: none;">
+                <h3>💕 Relationship Compatibility Check</h3>
+                <h4 style="margin-top: 20px; color: #667eea;">Person 1</h4>
+                <div class="form-group">
+                    <label for="name1">Full Name:</label>
+                    <input type="text" id="name1" placeholder="Person 1 name">
+                </div>
+                <div class="form-group">
+                    <label for="dob1">Date of Birth:</label>
+                    <input type="date" id="dob1">
+                </div>
+                
+                <h4 style="margin-top: 20px; color: #667eea;">Person 2</h4>
+                <div class="form-group">
+                    <label for="name2">Full Name:</label>
+                    <input type="text" id="name2" placeholder="Person 2 name">
+                </div>
+                <div class="form-group">
+                    <label for="dob2">Date of Birth:</label>
+                    <input type="date" id="dob2">
+                </div>
+                
+                <div class="button-group">
+                    <button class="btn-primary" onclick="checkCompatibility()">Check Compatibility</button>
+                    <button class="btn-secondary" onclick="clearForm()">Clear</button>
+                </div>
+            </div>
+            
+            <!-- Loading Spinner -->
+            <div class="loading" id="loadingSpinner">
+                <div class="spinner"></div>
+                <p>Analyzing your Vedic numerology profile...</p>
+            </div>
+            
+            <!-- Analysis Results -->
+            <div class="analysis-result" id="analysisResult"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Switch between analysis types
+        document.getElementById('analysisType').addEventListener('change', function() {
+            const type = this.value;
+            document.getElementById('fullAnalysisForm').style.display = type === 'full' ? 'block' : 'none';
+            document.getElementById('compatibilityForm').style.display = type === 'compatibility' ? 'block' : 'none';
+            
+            // Show life path in same form as full
+            if(type === 'lifepart') {
+                document.getElementById('fullAnalysisForm').style.display = 'block';
+            }
+            
+            document.getElementById('analysisResult').innerHTML = '';
+            document.getElementById('errorMsg').classList.remove('show');
+            document.getElementById('successMsg').classList.remove('show');
+        });
+        
+        function showError(message) {
+            const errorDiv = document.getElementById('errorMsg');
+            errorDiv.textContent = '❌ ' + message;
+            errorDiv.classList.add('show');
+            document.getElementById('loadingSpinner').classList.remove('show');
+        }
+        
+        function showSuccess(message) {
+            const successDiv = document.getElementById('successMsg');
+            successDiv.textContent = '✅ ' + message;
+            successDiv.classList.add('show');
+        }
+        
+        function clearForm() {
+            document.getElementById('name').value = '';
+            document.getElementById('dob').value = '';
+            document.getElementById('name1').value = '';
+            document.getElementById('dob1').value = '';
+            document.getElementById('name2').value = '';
+            document.getElementById('dob2').value = '';
+            document.getElementById('analysisResult').innerHTML = '';
+            document.getElementById('errorMsg').classList.remove('show');
+            document.getElementById('successMsg').classList.remove('show');
+        }
+        
+        async function performFullAnalysis() {
+            const name = document.getElementById('name').value.trim();
+            const dob = document.getElementById('dob').value;
+            const language = document.getElementById('language').value;
+            
+            if(!name || !dob) {
+                showError('Please enter your name and date of birth');
+                return;
+            }
+            
+            document.getElementById('loadingSpinner').classList.add('show');
+            document.getElementById('errorMsg').classList.remove('show');
+            
+            try {
+                const response = await fetch('/api/vedic/full-analysis', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ name, dob, language })
+                });
+                
+                if(!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Analysis failed');
+                }
+                
+                const data = await response.json();
+                displayFullAnalysis(data.analysis);
+                showSuccess('Analysis completed successfully!');
+            } catch(error) {
+                showError(error.message);
+            }
+        }
+        
+        async function checkCompatibility() {
+            const name1 = document.getElementById('name1').value.trim();
+            const dob1 = document.getElementById('dob1').value;
+            const name2 = document.getElementById('name2').value.trim();
+            const dob2 = document.getElementById('dob2').value;
+            
+            if(!name1 || !dob1 || !name2 || !dob2) {
+                showError('Please fill in all fields for both people');
+                return;
+            }
+            
+            document.getElementById('loadingSpinner').classList.add('show');
+            document.getElementById('errorMsg').classList.remove('show');
+            
+            try {
+                const response = await fetch('/api/vedic/relationship-compatibility', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({ name1, dob1, name2, dob2 })
+                });
+                
+                if(!response.ok) {
+                    const error = await response.json();
+                    throw new Error(error.error || 'Compatibility check failed');
+                }
+                
+                const data = await response.json();
+                displayCompatibility(data.compatibility);
+                showSuccess('Compatibility analysis completed!');
+            } catch(error) {
+                showError(error.message);
+            }
+        }
+        
+        function displayFullAnalysis(analysis) {
+            const result = document.getElementById('analysisResult');
+            const { numbers, yearly_forecast } = analysis;
+            
+            let html = `
+                <h2 style="color: #667eea; margin-bottom: 20px;">📊 Your Complete Numerological Profile</h2>
+                
+                <div class="info-grid">
+                    <div class="info-box">
+                        <h4>📅 Birth Number (Destiny Day)</h4>
+                        <div style="font-size: 2em; font-weight: bold; color: #667eea; text-align: center;">${numbers.birth_number.number}</div>
+                        <p><strong>${numbers.birth_number.meaning.name}</strong></p>
+                        <p>${numbers.birth_number.meaning.vedic_meaning}</p>
+                    </div>
+                    
+                    <div class="info-box">
+                        <h4>🔮 Destiny Number (Life Path)</h4>
+                        <div style="font-size: 2em; font-weight: bold; color: #764ba2; text-align: center;">${numbers.destiny_number.number}</div>
+                        <p><strong>${numbers.destiny_number.meaning.name}</strong></p>
+                        <p>${numbers.destiny_number.meaning.vedic_meaning}</p>
+                    </div>
+                    
+                    <div class="info-box">
+                        <h4>✍️ Name Number (Expression)</h4>
+                        <div style="font-size: 2em; font-weight: bold; color: #667eea; text-align: center;">${numbers.name_number.number}</div>
+                        <p><strong>${numbers.name_number.meaning.name}</strong></p>
+                        <p>${numbers.name_number.meaning.vedic_meaning}</p>
+                    </div>
+                </div>
+                
+                ${displayNumberDetails(numbers)}
+                ${yearly_forecast.personal_year ? `<div class="compatibility-section"><h4>📈 Personal Year Forecast</h4><p><strong>Year ${yearly_forecast.personal_year}:</strong> ${yearly_forecast.forecast}</p></div>` : ''}
+            `;
+            
+            result.innerHTML = html;
+            result.classList.add('show');
+            document.getElementById('loadingSpinner').classList.remove('show');
+        }
+        
+        function displayNumberDetails(numbers) {
+            let html = '';
+            
+            for(let key in numbers) {
+                if(key === 'birth_number' || key === 'destiny_number' || key === 'name_number') {
+                    const num = numbers[key];
+                    const meaning = num.meaning;
+                    
+                    html += `
+                        <div style="margin-top: 30px; border-top: 2px solid #ddd; padding-top: 20px;">
+                            <h3 style="color: #667eea; margin-bottom: 20px;">Details: ${meaning.name}</h3>
+                            
+                            <div class="info-grid">
+                                <div class="info-box">
+                                    <h4>🌟 Traits & Characteristics</h4>
+                                    <ul>
+                                        ${meaning.traits.map(t => `<li>${t}</li>`).join('')}
+                                    </ul>
+                                </div>
+                                
+                                <div class="info-box">
+                                    <h4>✅ Positive Qualities</h4>
+                                    <p>${meaning.positive}</p>
+                                </div>
+                                
+                                <div class="info-box">
+                                    <h4>⚠️ Challenges</h4>
+                                    <p>${meaning.negative}</p>
+                                </div>
+                                
+                                <div class="info-box">
+                                    <h4>💼 Ideal Careers</h4>
+                                    <ul>
+                                        ${(num.careers || []).slice(0, 5).map(c => `<li>${c}</li>`).join('')}
+                                    </ul>
+                                </div>
+                                
+                                <div class="info-box">
+                                    <h4>🍀 Lucky Elements</h4>
+                                    <p><strong>Color:</strong> ${meaning.color}</p>
+                                    <p><strong>Day:</strong> ${meaning.day}</p>
+                                    <p><strong>Stone:</strong> ${meaning.lucky_stone}</p>
+                                    <p><strong>Planet:</strong> ${meaning.planet}</p>
+                                </div>
+                                
+                                <div class="info-box">
+                                    <h4>📿 Mantra</h4>
+                                    <p style="font-weight: bold; color: #667eea;">${meaning.mantra}</p>
+                                </div>
+                            </div>
+                            
+                            ${num.remedies ? displayRemedies(num.remedies) : ''}
+                            ${num.practices ? displayPractices(num.practices) : ''}
+                        </div>
+                    `;
+                }
+            }
+            
+            return html;
+        }
+        
+        function displayRemedies(remedies) {
+            return `
+                <div style="margin-top: 20px; background: #fff3cd; padding: 20px; border-radius: 8px; border-left: 4px solid #ffc107;">
+                    <h4 style="color: #856404; margin-bottom: 15px;">🧿 Vedic Remedies & Rituals</h4>
+                    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 15px;">
+                        ${Object.entries(remedies).map(([key, value]) => `
+                            <div>
+                                <strong style="color: #667eea;">${key.replace(/_/g, ' ').toUpperCase()}:</strong>
+                                <p>${typeof value === 'string' ? value : JSON.stringify(value, null, 2)}</p>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        }
+        
+        function displayPractices(practices) {
+            return `
+                <div style="margin-top: 20px; background: #e7f3ff; padding: 20px; border-radius: 8px; border-left: 4px solid #2196F3;">
+                    <h4 style="color: #0d47a1; margin-bottom: 15px;">🧘 Spiritual Practices</h4>
+                    <ul>
+                        ${practices.map(p => `<li style="margin-bottom: 10px;">${p}</li>`).join('')}
+                    </ul>
+                </div>
+            `;
+        }
+        
+        function displayCompatibility(compat) {
+            const result = document.getElementById('analysisResult');
+            
+            html = `
+                <h2 style="color: #667eea; margin-bottom: 20px;">💕 Relationship Compatibility Analysis</h2>
+                
+                <div class="info-grid">
+                    <div class="info-box" style="text-align: center;">
+                        <h4>${compat.person1.name}</h4>
+                        <p><strong>Birth Number:</strong> ${compat.person1.birth}</p>
+                        <p><strong>Destiny Number:</strong> ${compat.person1.destiny}</p>
+                        <p><strong>Name Number:</strong> ${compat.person1.name_num}</p>
+                    </div>
+                    
+                    <div class="info-box" style="text-align: center;">
+                        <h4>${compat.person2.name}</h4>
+                        <p><strong>Birth Number:</strong> ${compat.person2.birth}</p>
+                        <p><strong>Destiny Number:</strong> ${compat.person2.destiny}</p>
+                        <p><strong>Name Number:</strong> ${compat.person2.name_num}</p>
+                    </div>
+                </div>
+                
+                <div class="compatibility-section">
+                    <h3 style="text-align: center; color: #667eea; margin-bottom: 20px;">Compatibility Scores</h3>
+                    
+                    <div class="info-grid">
+                        <div style="text-align: center; padding: 20px; background: white; border-radius: 8px;">
+                            <h4>Birth Number Compatibility</h4>
+                            <div class="compatibility-score">${compat.birth_compatibility.score}%</div>
+                            <p>${compat.birth_compatibility.note}</p>
+                        </div>
+                        
+                        <div style="text-align: center; padding: 20px; background: white; border-radius: 8px;">
+                            <h4>Destiny Number Compatibility</h4>
+                            <div class="compatibility-score">${compat.destiny_compatibility.score}%</div>
+                            <p>${compat.destiny_compatibility.note}</p>
+                        </div>
+                        
+                        <div style="text-align: center; padding: 20px; background: white; border-radius: 8px;">
+                            <h4>Name Number Compatibility</h4>
+                            <div class="compatibility-score">${compat.name_compatibility.score}%</div>
+                            <p>${compat.name_compatibility.note}</p>
+                        </div>
+                        
+                        <div style="text-align: center; padding: 20px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 8px; color: white; grid-column: 1 / -1;">
+                            <h3>Overall Compatibility</h3>
+                            <div style="font-size: 3em; font-weight: bold; margin: 15px 0;">${compat.overall_score}%</div>
+                            <p style="font-size: 1.2em;">${compat.interpretation}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+            
+            result.innerHTML = html;
+            result.classList.add('show');
+            document.getElementById('loadingSpinner').classList.remove('show');
+        }
+    </script>
+</body>
+</html>

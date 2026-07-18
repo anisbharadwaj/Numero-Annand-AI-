@@ -48,6 +48,13 @@ from report_generator import (
     generate_premium_report, get_report_text_content, mark_report_as_completed,
     get_report_by_order, NumerologyAnalyzer
 )
+from vedic_numerology import (
+    VEDIC_NUMBER_MEANINGS, MASTER_NUMBERS, VEDIC_REMEDIES, VEDIC_PLANETS,
+    get_number_meaning, calculate_birth_number, calculate_destiny_number,
+    calculate_name_number, reduce_to_single_digit, get_relationship_compatibility,
+    VEDIC_CAREERS, VEDIC_FINANCIAL_GUIDANCE, get_vedic_year_forecast,
+    VEDIC_YANTRAS, LO_SHU_POSITIONS, VEDIC_SPIRITUAL_PRACTICES
+)
 
 app = Flask(__name__)
 app.secret_key = os.getenv('SECRET_KEY', "numero-annand-ai-secret-2024")
@@ -2038,7 +2045,7 @@ def api_get_translations(language):
             'welcome': 'স্বাগতম',
             'login': 'লগইন কৰক',
             'signup': 'সাইন আপ কৰক',
-            'logout': 'লগআউট'
+            'logout': 'লগআউट'
         }
     }
     
@@ -2048,6 +2055,281 @@ def api_get_translations(language):
     return jsonify({
         'success': True,
         'translations': translations[language]
+    }), 200
+
+# =========================================================
+# API ROUTES - VEDIC NUMEROLOGY ANALYSIS
+# =========================================================
+
+@app.route('/api/vedic/full-analysis', methods=['POST'])
+def api_vedic_full_analysis():
+    """Comprehensive Vedic numerology analysis"""
+    
+    data = request.get_json()
+    name = data.get('name', '').strip()
+    dob = data.get('dob', '').strip()
+    language = data.get('language', 'en')
+    
+    if not name or not dob:
+        return jsonify({'error': 'Name and date of birth required'}), 400
+    
+    try:
+        # Calculate all numbers
+        birth_number = calculate_birth_number(dob)
+        destiny_number = calculate_destiny_number(dob)
+        name_number = calculate_name_number(name)
+        
+        # Get meanings
+        birth_meaning = get_number_meaning(birth_number)
+        destiny_meaning = get_number_meaning(destiny_number)
+        name_meaning = get_number_meaning(name_number)
+        
+        # Get remedies
+        birth_remedies = VEDIC_REMEDIES.get(birth_number, {})
+        destiny_remedies = VEDIC_REMEDIES.get(destiny_number, {})
+        name_remedies = VEDIC_REMEDIES.get(name_number, {})
+        
+        # Get career guidance
+        birth_careers = VEDIC_CAREERS.get(birth_number, [])
+        name_careers = VEDIC_CAREERS.get(name_number, [])
+        
+        # Get financial guidance
+        birth_finance = VEDIC_FINANCIAL_GUIDANCE.get(birth_number, {})
+        destiny_finance = VEDIC_FINANCIAL_GUIDANCE.get(destiny_number, {})
+        
+        # Get spiritual practices
+        birth_practices = VEDIC_SPIRITUAL_PRACTICES.get(birth_number, [])
+        name_practices = VEDIC_SPIRITUAL_PRACTICES.get(name_number, [])
+        
+        # Get Yantra information
+        birth_yantra = VEDIC_YANTRAS.get(birth_number, {})
+        
+        # Get yearly forecast
+        dob_parts = dob.split('-')
+        birth_year = int(dob_parts[0]) if len(dob_parts) >= 3 else 0
+        yearly_forecast = get_vedic_year_forecast(birth_year) if birth_year > 0 else {}
+        
+        return jsonify({
+            'success': True,
+            'analysis': {
+                'name': name,
+                'dob': dob,
+                'numbers': {
+                    'birth_number': {
+                        'number': birth_number,
+                        'meaning': birth_meaning,
+                        'remedies': birth_remedies,
+                        'careers': birth_careers,
+                        'finance': birth_finance,
+                        'practices': birth_practices,
+                        'yantra': birth_yantra
+                    },
+                    'destiny_number': {
+                        'number': destiny_number,
+                        'meaning': destiny_meaning,
+                        'remedies': destiny_remedies,
+                        'careers': name_careers,
+                        'finance': destiny_finance
+                    },
+                    'name_number': {
+                        'number': name_number,
+                        'meaning': name_meaning,
+                        'remedies': name_remedies,
+                        'practices': name_practices
+                    }
+                },
+                'yearly_forecast': yearly_forecast,
+                'vedic_planets': VEDIC_PLANETS
+            }
+        }), 200
+    
+    except Exception as e:
+        return jsonify({'error': f'Analysis failed: {str(e)}'}), 400
+
+@app.route('/api/vedic/relationship-compatibility', methods=['POST'])
+def api_vedic_relationship_compatibility():
+    """Calculate relationship compatibility between two people"""
+    
+    data = request.get_json()
+    name1 = data.get('name1', '').strip()
+    dob1 = data.get('dob1', '').strip()
+    name2 = data.get('name2', '').strip()
+    dob2 = data.get('dob2', '').strip()
+    
+    if not all([name1, dob1, name2, dob2]):
+        return jsonify({'error': 'All fields required'}), 400
+    
+    try:
+        # Calculate numbers for both
+        birth1 = calculate_birth_number(dob1)
+        destiny1 = calculate_destiny_number(dob1)
+        name1_num = calculate_name_number(name1)
+        
+        birth2 = calculate_birth_number(dob2)
+        destiny2 = calculate_destiny_number(dob2)
+        name2_num = calculate_name_number(name2)
+        
+        # Get compatibilities
+        birth_compat = get_relationship_compatibility(birth1, birth2)
+        destiny_compat = get_relationship_compatibility(destiny1, destiny2)
+        name_compat = get_relationship_compatibility(name1_num, name2_num)
+        
+        # Average score
+        avg_score = (birth_compat['score'] + destiny_compat['score'] + name_compat['score']) / 3
+        
+        return jsonify({
+            'success': True,
+            'compatibility': {
+                'person1': {'name': name1, 'birth': birth1, 'destiny': destiny1, 'name_num': name1_num},
+                'person2': {'name': name2, 'birth': birth2, 'destiny': destiny2, 'name_num': name2_num},
+                'birth_compatibility': birth_compat,
+                'destiny_compatibility': destiny_compat,
+                'name_compatibility': name_compat,
+                'overall_score': round(avg_score),
+                'interpretation': 'Excellent match' if avg_score >= 80 else 'Good match' if avg_score >= 60 else 'Moderate match' if avg_score >= 40 else 'Challenging match'
+            }
+        }), 200
+    
+    except Exception as e:
+        return jsonify({'error': f'Compatibility check failed: {str(e)}'}), 400
+
+@app.route('/api/vedic/number-meanings/<int:number>', methods=['GET'])
+def api_vedic_number_meaning(number):
+    """Get detailed Vedic meaning for a specific number"""
+    
+    if number < 1 or number > 9:
+        if number not in MASTER_NUMBERS:
+            return jsonify({'error': 'Invalid number. Must be 1-9 or master number (11, 22, 33)'}), 400
+    
+    if number in VEDIC_NUMBER_MEANINGS:
+        meaning = VEDIC_NUMBER_MEANINGS[number]
+    elif number in MASTER_NUMBERS:
+        meaning = MASTER_NUMBERS[number]
+    else:
+        return jsonify({'error': 'Number not found'}), 404
+    
+    remedies = VEDIC_REMEDIES.get(number, {})
+    careers = VEDIC_CAREERS.get(number, [])
+    yantra = VEDIC_YANTRAS.get(number, {})
+    finance = VEDIC_FINANCIAL_GUIDANCE.get(number, {})
+    practices = VEDIC_SPIRITUAL_PRACTICES.get(number, [])
+    
+    return jsonify({
+        'success': True,
+        'number': number,
+        'meaning': meaning,
+        'remedies': remedies,
+        'careers': careers,
+        'yantra': yantra,
+        'financial_guidance': finance,
+        'spiritual_practices': practices
+    }), 200
+
+@app.route('/api/vedic/lucky-elements/<int:number>', methods=['GET'])
+def api_vedic_lucky_elements(number):
+    """Get lucky elements for a specific number"""
+    
+    if number < 1 or number > 9:
+        return jsonify({'error': 'Invalid number. Must be 1-9'}), 400
+    
+    meaning = VEDIC_NUMBER_MEANINGS.get(number, {})
+    yantra = VEDIC_YANTRAS.get(number, {})
+    planet = VEDIC_PLANETS.get([v for k,v in VEDIC_PLANETS.items() if v.get('number') == number][0]) if any(v.get('number') == number for v in VEDIC_PLANETS.values()) else {}
+    
+    return jsonify({
+        'success': True,
+        'number': number,
+        'lucky_elements': {
+            'color': meaning.get('color', ''),
+            'day': meaning.get('day', ''),
+            'stone': meaning.get('lucky_stone', ''),
+            'mantra': meaning.get('mantra', ''),
+            'element': meaning.get('element', ''),
+            'yantra': yantra,
+            'planet_name': meaning.get('planet', ''),
+            'positive_traits': meaning.get('traits', []),
+            'professions': VEDIC_CAREERS.get(number, [])
+        }
+    }), 200
+
+@app.route('/api/vedic/life-path', methods=['POST'])
+def api_vedic_life_path():
+    """Get complete life path and destiny guidance"""
+    
+    data = request.get_json()
+    name = data.get('name', '').strip()
+    dob = data.get('dob', '').strip()
+    
+    if not name or not dob:
+        return jsonify({'error': 'Name and date of birth required'}), 400
+    
+    try:
+        destiny_num = calculate_destiny_number(dob)
+        birth_num = calculate_birth_number(dob)
+        name_num = calculate_name_number(name)
+        
+        destiny_info = VEDIC_NUMBER_MEANINGS.get(destiny_num, {})
+        
+        life_path = {
+            'destiny_number': destiny_num,
+            'birth_number': birth_num,
+            'name_number': name_num,
+            'life_purpose': destiny_info.get('vedic_meaning', ''),
+            'key_traits': destiny_info.get('traits', []),
+            'career_path': VEDIC_CAREERS.get(destiny_num, []),
+            'challenges': f"Main challenge is to balance {destiny_info.get('negative', '')} and embrace {destiny_info.get('positive', '')}",
+            'life_lessons': f"Life lesson: Learn to embody the highest expression of {destiny_info.get('name', '')}",
+            'success_factors': [
+                f"Follow your {destiny_info.get('name', '')} nature",
+                f"Embrace the energy of {destiny_info.get('planet', '')}",
+                f"Practice the mantra: {destiny_info.get('mantra', '')}",
+                f"Use color therapy with {destiny_info.get('color', '')}"
+            ]
+        }
+        
+        return jsonify({
+            'success': True,
+            'life_path': life_path
+        }), 200
+    
+    except Exception as e:
+        return jsonify({'error': f'Life path analysis failed: {str(e)}'}), 400
+
+@app.route('/api/vedic/remedies/<int:number>', methods=['GET'])
+def api_vedic_remedies(number):
+    """Get Vedic remedies and rituals for a specific number"""
+    
+    if number < 1 or number > 9:
+        return jsonify({'error': 'Invalid number. Must be 1-9'}), 400
+    
+    remedies = VEDIC_REMEDIES.get(number, {})
+    
+    if not remedies:
+        return jsonify({'error': 'Remedies not found'}), 404
+    
+    return jsonify({
+        'success': True,
+        'number': number,
+        'remedies': remedies,
+        'note': 'These remedies are based on ancient Vedic principles. Consistency and faith are key to effectiveness.'
+    }), 200
+
+@app.route('/api/vedic/spiritual-practices/<int:number>', methods=['GET'])
+def api_vedic_spiritual_practices(number):
+    """Get spiritual practices for a specific number"""
+    
+    if number < 1 or number > 9:
+        return jsonify({'error': 'Invalid number. Must be 1-9'}), 400
+    
+    practices = VEDIC_SPIRITUAL_PRACTICES.get(number, [])
+    meaning = VEDIC_NUMBER_MEANINGS.get(number, {})
+    
+    return jsonify({
+        'success': True,
+        'number': number,
+        'practices': practices,
+        'mantra': meaning.get('mantra', ''),
+        'description': f'Spiritual practices for {meaning.get("name", "")} energy'
     }), 200
 
 # =========================================================
@@ -2326,6 +2608,47 @@ def api_ai_limits():
         'role': user.role,
         'is_premium': user.is_premium(),
         'unlimited': remaining == -1
+    }), 200
+
+# =========================================================
+# WEB ROUTES - TEMPLATES
+# =========================================================
+
+@app.route('/vedic-analysis', methods=['GET'])
+def vedic_analysis_page():
+    """Serve the Vedic numerology analysis page"""
+    try:
+        with open('templates/vedic_analysis.html', 'r', encoding='utf-8') as f:
+            html_content = f.read()
+        return html_content
+    except FileNotFoundError:
+        return render_template_string('''
+            <html>
+            <body style="font-family: Arial; text-align: center; padding: 50px;">
+                <h1>Vedic Numerology Analysis</h1>
+                <p>The analysis page is loading. Please refresh the page.</p>
+                <p><a href="/">← Back to Home</a></p>
+            </body>
+            </html>
+        '''), 404
+
+
+
+@app.route('/status', methods=['GET'])
+def status():
+    """API status check"""
+    return jsonify({
+        'success': True,
+        'status': 'API is running',
+        'version': '2.0',
+        'features': [
+            'Vedic Numerology Analysis',
+            'Relationship Compatibility',
+            'Life Path Guidance',
+            'Remedies & Rituals',
+            'Spiritual Practices',
+            'Multi-language Support'
+        ]
     }), 200
 
 # =========================================================
